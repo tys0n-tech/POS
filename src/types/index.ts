@@ -200,6 +200,7 @@ export interface StoreSettings {
   printerPaperWidth: '80mm' | '58mm';
   enableAudio: boolean;
   theme: 'light' | 'dark' | 'system';
+  language: 'en' | 'th';
 }
 
 export interface ToastMessage {

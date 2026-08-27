@@ -7,6 +7,7 @@ interface SettingsState {
   settings: StoreSettings;
   updateSettings: (newSettings: Partial<StoreSettings>) => void;
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
+  setLanguage: (lang: 'en' | 'th') => void;
   toggleAudio: () => void;
   resetToDefaults: () => void;
 }
@@ -57,6 +58,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
   setTheme: (theme) => {
     get().updateSettings({ theme });
+  },
+  setLanguage: (language) => {
+    get().updateSettings({ language });
   },
   toggleAudio: () => {
     const current = get().settings.enableAudio;

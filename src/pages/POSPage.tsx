@@ -114,9 +114,9 @@ export const POSPage: React.FC = () => {
     return matchesCat && matchesSearch;
   });
 
-  const handleProductCardClick = (product: Product) => {
+  const handleProductCardClick = (product: Product, rect?: DOMRect) => {
     if (product.modifierGroupIds && product.modifierGroupIds.length > 0) {
-      setCustomizingProduct(product);
+      setCustomizingProduct(product, rect);
     } else {
       addItem(product, []);
       showToast({ type: 'success', title: 'Added to Cart', message: product.name, duration: 1500 });

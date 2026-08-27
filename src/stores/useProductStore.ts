@@ -8,9 +8,10 @@ interface ProductState {
   selectedCategory: Category;
   searchQuery: string;
   customizingProduct: Product | null;
+  customizingProductRect: DOMRect | null;
   setSelectedCategory: (cat: Category) => void;
   setSearchQuery: (query: string) => void;
-  setCustomizingProduct: (product: Product | null) => void;
+  setCustomizingProduct: (product: Product | null, rect?: DOMRect | null) => void;
   findProductByBarcode: (barcode: string) => Product | undefined;
   addProduct: (product: Omit<Product, 'id' | 'soldCount'>) => void;
   updateProduct: (id: string, updates: Partial<Product>) => void;
@@ -49,10 +50,12 @@ export const useProductStore = create<ProductState>((set, get) => ({
   selectedCategory: 'All',
   searchQuery: '',
   customizingProduct: null,
+  customizingProductRect: null,
 
   setSelectedCategory: (selectedCategory) => set({ selectedCategory }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
-  setCustomizingProduct: (customizingProduct) => set({ customizingProduct }),
+  setCustomizingProduct: (customizingProduct, rect = null) => 
+    set({ customizingProduct, customizingProductRect: rect }),
 
   findProductByBarcode: (barcode) => {
     const clean = barcode.trim().toLowerCase();

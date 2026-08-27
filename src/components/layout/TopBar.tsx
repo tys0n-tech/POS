@@ -11,11 +11,14 @@ import {
   Lock,
   LogOut,
   ShieldCheck,
-  ChevronDown
+  ChevronDown,
+  Globe,
+  Monitor
 } from 'lucide-react';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useStaffStore } from '../../stores/useStaffStore';
 import { useShiftStore } from '../../stores/useShiftStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import { formatCurrency } from '../../utils/format';
 import { sound } from '../../utils/audio';
 
@@ -29,15 +32,21 @@ export const TopBar: React.FC<TopBarProps> = ({ pageTitle, onOpenSearch, onNavig
   const { settings, setTheme, toggleAudio } = useSettingsStore();
   const { currentStaff, setPinModalOpen, lockScreen, logout } = useStaffStore();
   const { currentShift, setShiftDrawerOpen } = useShiftStore();
+  const { t } = useTranslation();
 
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
+  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const languageMenuRef = useRef<HTMLDivElement>(null);
+  const themeMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setIsProfileMenuOpen(false);
-      }
+      const target = e.target as Node;
+      if (profileMenuRef.current && !profileMenuRef.current.contains(target)) setIsProfileMenuOpen(false);
+      if (languageMenuRef.current && !languageMenuRef.current.contains(target)) setIsLanguageMenuOpen(false);
+      if (themeMenuRef.current && !themeMenuRef.current.contains(target)) setIsThemeMenuOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -50,10 +59,11 @@ export const TopBar: React.FC<TopBarProps> = ({ pageTitle, onOpenSearch, onNavig
     else setTheme('light');
   };
 
-  const getThemeIcon = () => {
-    if (settings.theme === 'light') return <Sun className="w-4 h-4 text-[#FF9F0A]" />;
-    if (settings.theme === 'dark') return <Moon className="w-4 h-4 text-[#98989D]" />;
-    return <Laptop className="w-4 h-4 text-[#0071E3]" />;
+  const getThemeIcon = (themeState?: string) => {
+    const t = themeState || settings.theme;
+    if (t === 'light') return <Sun className="w-4 h-4 text-[#FF9F0A]" />;
+    if (t === 'dark') return <Moon className="w-4 h-4 text-[#98989D]" />;
+    return <Monitor className="w-4 h-4 text-[#0071E3]" />;
   };
 
   return (
@@ -65,7 +75,7 @@ export const TopBar: React.FC<TopBarProps> = ({ pageTitle, onOpenSearch, onNavig
         </h2>
         <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full bg-black/[0.03] dark:bg-white/[0.06] text-[11px] font-medium text-[#6E6E73] dark:text-[#98989D]">
           <span className="w-1.5 h-1.5 rounded-full bg-[#34C759] animate-pulse" />
-          <span>Store Open</span>
+          <span>{t('topbar.storeOpen')}</span>
         </div>
       </div>
 
@@ -81,7 +91,7 @@ export const TopBar: React.FC<TopBarProps> = ({ pageTitle, onOpenSearch, onNavig
           className="flex items-center gap-2 px-3 py-1.5 rounded-[10px] bg-black/[0.04] hover:bg-black/[0.07] dark:bg-white/[0.06] dark:hover:bg-white/[0.1] text-xs text-[#6E6E73] dark:text-[#98989D] transition-all"
         >
           <Search className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">Quick Search</span>
+          <span className="hidden md:inline">{t('topbar.quickSearch')}</span>
           <kbd className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 text-[10px] font-mono">
             /
           </kbd>
@@ -99,8 +109,8 @@ export const TopBar: React.FC<TopBarProps> = ({ pageTitle, onOpenSearch, onNavig
           <DollarSign className="w-3.5 h-3.5 text-[#8B6F5A] dark:text-[#D4BBA5]" />
           <span>
             {currentShift?.status === 'OPEN'
-              ? `Shift: ${formatCurrency(currentShift.expectedCash)}`
-              : 'Shift: Closed'}
+              ? `${t('topbar.shift')}: ${formatCurrency(currentShift.expectedCash)}`
+              : `${t('topbar.shift')}: ${t('topbar.closed')}`}
           </span>
         </button>
 
@@ -108,7 +118,7 @@ export const TopBar: React.FC<TopBarProps> = ({ pageTitle, onOpenSearch, onNavig
         <button
           type="button"
           onClick={toggleAudio}
-          title={settings.enableAudio ? 'Audio Effects On' : 'Audio Muted'}
+          title={settings.enableAudio ? t('topbar.audioOn') : t('topbar.audioMuted')}
           className="w-9 h-9 rounded-[10px] bg-black/[0.04] hover:bg-black/[0.07] dark:bg-white/[0.06] dark:hover:bg-white/[0.1] flex items-center justify-center text-[#6E6E73] dark:text-[#98989D] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] transition-colors"
         >
           {settings.enableAudio ? (
@@ -118,23 +128,96 @@ export const TopBar: React.FC<TopBarProps> = ({ pageTitle, onOpenSearch, onNavig
           )}
         </button>
 
-        {/* Dark Mode Switcher */}
-        <button
-          type="button"
-          onClick={cycleTheme}
-          title={`Theme: ${settings.theme}`}
-          className="w-9 h-9 rounded-[10px] bg-black/[0.04] hover:bg-black/[0.07] dark:bg-white/[0.06] dark:hover:bg-white/[0.1] flex items-center justify-center transition-colors"
-        >
-          {getThemeIcon()}
-        </button>
+        {/* Language Switcher Menu */}
+        <div className="relative" ref={languageMenuRef}>
+          <button
+            type="button"
+            onClick={() => {
+              sound.playClick();
+              setIsLanguageMenuOpen(!isLanguageMenuOpen);
+              setIsThemeMenuOpen(false);
+              setIsProfileMenuOpen(false);
+            }}
+            title={t('topbar.changeLanguage')}
+            className="w-9 h-9 rounded-[10px] bg-black/[0.04] hover:bg-black/[0.07] dark:bg-white/[0.06] dark:hover:bg-white/[0.1] flex items-center justify-center text-[#6E6E73] dark:text-[#98989D] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] transition-colors"
+          >
+            <Globe className="w-4 h-4" />
+          </button>
+
+          {isLanguageMenuOpen && (
+            <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-[#1C1C1E] rounded-[14px] shadow-xl border border-black/10 dark:border-white/10 p-1.5 z-50 flex flex-col">
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playClick();
+                  useSettingsStore.getState().setLanguage('th');
+                  setIsLanguageMenuOpen(false);
+                }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-[10px] text-xs font-medium text-left transition-colors ${settings.language === 'th' ? 'bg-[#8B6F5A]/10 text-[#8B6F5A] dark:text-[#D4BBA5]' : 'text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
+              >
+                <span>ภาษาไทย (TH)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playClick();
+                  useSettingsStore.getState().setLanguage('en');
+                  setIsLanguageMenuOpen(false);
+                }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-[10px] text-xs font-medium text-left transition-colors ${settings.language === 'en' ? 'bg-[#8B6F5A]/10 text-[#8B6F5A] dark:text-[#D4BBA5]' : 'text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
+              >
+                <span>English (EN)</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Theme Switcher Menu */}
+        <div className="relative" ref={themeMenuRef}>
+          <button
+            type="button"
+            onClick={() => {
+              sound.playClick();
+              setIsThemeMenuOpen(!isThemeMenuOpen);
+              setIsLanguageMenuOpen(false);
+              setIsProfileMenuOpen(false);
+            }}
+            title={`${t('topbar.theme')}: ${settings.theme}`}
+            className="w-9 h-9 rounded-[10px] bg-black/[0.04] hover:bg-black/[0.07] dark:bg-white/[0.06] dark:hover:bg-white/[0.1] flex items-center justify-center transition-colors"
+          >
+            {getThemeIcon()}
+          </button>
+          
+          {isThemeMenuOpen && (
+            <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-[#1C1C1E] rounded-[14px] shadow-xl border border-black/10 dark:border-white/10 p-1.5 z-50 flex flex-col">
+              {(['light', 'dark', 'system'] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => {
+                    sound.playClick();
+                    setTheme(t);
+                    setIsThemeMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-xs font-medium text-left transition-colors capitalize ${settings.theme === t ? 'bg-[#8B6F5A]/10 text-[#8B6F5A] dark:text-[#D4BBA5]' : 'text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
+                >
+                  {getThemeIcon(t)}
+                  <span>{t}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Staff Switcher & Profile Dropdown Menu */}
-        <div className="relative" ref={menuRef}>
+        <div className="relative" ref={profileMenuRef}>
           <button
             type="button"
             onClick={() => {
               sound.playClick();
               setIsProfileMenuOpen(!isProfileMenuOpen);
+              setIsLanguageMenuOpen(false);
+              setIsThemeMenuOpen(false);
             }}
             className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-[10px] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors border border-transparent hover:border-black/5"
           >
@@ -164,7 +247,7 @@ export const TopBar: React.FC<TopBarProps> = ({ pageTitle, onOpenSearch, onNavig
                   {currentStaff.name}
                 </p>
                 <p className="text-[10px] text-[#6E6E73] dark:text-[#98989D] uppercase tracking-wider">
-                  Role: {currentStaff.role}
+                  {t('topbar.role')}: {currentStaff.role}
                 </p>
               </div>
 
@@ -179,7 +262,7 @@ export const TopBar: React.FC<TopBarProps> = ({ pageTitle, onOpenSearch, onNavig
                 className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-xs font-medium text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-left transition-colors"
               >
                 <UserCheck className="w-3.5 h-3.5 text-[#8B6F5A]" />
-                <span>Switch Staff (PIN)</span>
+                <span>{t('topbar.switchStaff')}</span>
               </button>
 
               {onNavigateTab && (
@@ -193,7 +276,7 @@ export const TopBar: React.FC<TopBarProps> = ({ pageTitle, onOpenSearch, onNavig
                   className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-xs font-medium text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-left transition-colors"
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-[#0071E3]" />
-                  <span>Manage Staff & Roles</span>
+                  <span>{t('topbar.manageStaff')}</span>
                 </button>
               )}
 
@@ -209,7 +292,7 @@ export const TopBar: React.FC<TopBarProps> = ({ pageTitle, onOpenSearch, onNavig
                 className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-xs font-medium text-[#FF3B30] hover:bg-[#FF3B30]/10 text-left transition-colors"
               >
                 <Lock className="w-3.5 h-3.5" />
-                <span>Lock Screen / Logout</span>
+                <span>{t('topbar.lockScreen')}</span>
               </button>
             </div>
           )}

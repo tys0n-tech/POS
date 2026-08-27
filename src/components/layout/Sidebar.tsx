@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useStaffStore } from '../../stores/useStaffStore';
 import { useShiftStore } from '../../stores/useShiftStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import { cn } from '../../utils/format';
 import { sound } from '../../utils/audio';
 
@@ -40,6 +41,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
   const { currentStaff, setPinModalOpen, lockScreen } = useStaffStore();
   const { currentShift, setShiftDrawerOpen } = useShiftStore();
+  const { t } = useTranslation();
 
   const handleNavClick = (tab: NavItem) => {
     sound.playClick();
@@ -52,39 +54,39 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
 
   const navGroups = [
     {
-      label: 'OPERATIONS',
+      label: t('nav.operations'),
       items: [
-        { id: 'pos' as NavItem, label: 'POS Terminal', icon: Coffee },
-        { id: 'kitchen' as NavItem, label: 'Kitchen / Bar', icon: ChefHat },
-        { id: 'orders' as NavItem, label: 'Orders', icon: ShoppingBag }
+        { id: 'pos' as NavItem, label: t('nav.posTerminal'), icon: Coffee },
+        { id: 'kitchen' as NavItem, label: t('nav.kitchenBar'), icon: ChefHat },
+        { id: 'orders' as NavItem, label: t('nav.orders'), icon: ShoppingBag }
       ]
     },
     {
-      label: 'MANAGEMENT',
+      label: t('nav.management'),
       items: [
-        { id: 'products' as NavItem, label: 'Products', icon: Package },
-        { id: 'inventory' as NavItem, label: 'Inventory', icon: Boxes },
-        { id: 'customers' as NavItem, label: 'Customers', icon: Users },
-        { id: 'staff' as NavItem, label: 'Staff & PINs', icon: ShieldCheck }
+        { id: 'products' as NavItem, label: t('nav.products'), icon: Package },
+        { id: 'inventory' as NavItem, label: t('nav.inventory'), icon: Boxes },
+        { id: 'customers' as NavItem, label: t('nav.customers'), icon: Users },
+        { id: 'staff' as NavItem, label: t('nav.staffPins'), icon: ShieldCheck }
       ]
     },
     {
-      label: 'INSIGHTS',
+      label: t('nav.insights'),
       items: [
-        { id: 'dashboard' as NavItem, label: 'Overview', icon: LayoutDashboard },
-        { id: 'reports' as NavItem, label: 'Reports', icon: BarChart3 }
+        { id: 'dashboard' as NavItem, label: t('nav.overview'), icon: LayoutDashboard },
+        { id: 'reports' as NavItem, label: t('nav.reports'), icon: BarChart3 }
       ]
     },
     {
-      label: 'SYSTEM',
+      label: t('nav.system'),
       items: [
         { 
           id: 'shift' as NavItem, 
-          label: 'Register / Shift', 
+          label: t('nav.registerShift'), 
           icon: CircleDollarSign,
-          badge: currentShift?.status === 'OPEN' ? 'Open' : 'Closed'
+          badge: currentShift?.status === 'OPEN' ? t('status.open') : t('status.closed')
         },
-        { id: 'settings' as NavItem, label: 'Settings', icon: Settings }
+        { id: 'settings' as NavItem, label: t('nav.settings'), icon: Settings }
       ]
     }
   ];

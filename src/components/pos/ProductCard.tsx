@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion, Variants } from 'framer-motion';
 import { Product } from '../../types';
 import { formatCurrency, cn } from '../../utils/format';
@@ -7,7 +7,7 @@ import { Plus } from 'lucide-react';
 
 export interface ProductCardProps {
   product: Product;
-  onClick: (product: Product) => void;
+  onClick: (product: Product, rect?: DOMRect) => void;
 }
 
 const cardItemVariants: Variants = {
@@ -32,22 +32,25 @@ const cardItemVariants: Variants = {
 };
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+
   const handleClick = () => {
     sound.playClick();
-    onClick(product);
+    const rect = cardRef.current?.getBoundingClientRect();
+    onClick(product, rect);
   };
 
   const hasModifiers = product.modifierGroupIds && product.modifierGroupIds.length > 0;
 
   return (
     <motion.div
-      layout
+      ref={cardRef}
       variants={cardItemVariants}
       whileHover={{ y: -5, transition: { type: 'spring', stiffness: 400, damping: 25 } }}
       whileTap={{ scale: 0.97, transition: { type: 'spring', stiffness: 500, damping: 30 } }}
       onClick={handleClick}
       className={cn(
-        'group relative bg-white dark:bg-[#1C1C1E] rounded-[20px] p-3 border border-black/[0.06] dark:border-white/[0.08] shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_12px_28px_rgba(0,0,0,0.4)] cursor-pointer flex flex-col justify-between select-none will-change-transform',
+        'group relative bg-white dark:bg-[#1C1C1E] rounded-[20px] p-3 border border-black/[0.06] dark:border-white/[0.08] shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_12px_28px_rgba(0,0,0,0.4)] cursor-pointer flex flex-col justify-between select-none will-change-transform transition-shadow duration-200',
         !product.available && 'opacity-50 pointer-events-none'
       )}
     >

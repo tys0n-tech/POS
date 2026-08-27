@@ -649,7 +649,8 @@ export const initialStoreSettings: StoreSettings = {
   receiptFooterMessage: 'Thank you for visiting Northline Café. Follow @northlinecafe',
   printerPaperWidth: '80mm',
   enableAudio: true,
-  theme: 'light'
+  theme: 'light',
+  language: 'en'
 };
 
 export const initialInventoryTransactions: InventoryTransaction[] = [
