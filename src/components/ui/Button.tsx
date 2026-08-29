@@ -34,7 +34,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const baseStyles =
-      'inline-flex items-center justify-center font-medium transition-all duration-150 active:scale-[0.98] select-none disabled:opacity-40 disabled:pointer-events-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8B6F5A]/40';
+      'inline-flex items-center justify-center font-medium transition-all duration-150 active:scale-[0.96] select-none disabled:opacity-40 disabled:pointer-events-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8B6F5A]/40 will-change-transform';
 
     const sizeStyles = {
       sm: 'text-xs px-3 py-1.5 rounded-[8px] gap-1.5 h-8',

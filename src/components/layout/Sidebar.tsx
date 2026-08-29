@@ -12,16 +12,19 @@ import {
   CircleDollarSign,
   Lock,
   UserCheck,
-  ShieldCheck
+  ShieldCheck,
+  MapPin
 } from 'lucide-react';
 import { useStaffStore } from '../../stores/useStaffStore';
 import { useShiftStore } from '../../stores/useShiftStore';
 import { useTranslation } from '../../hooks/useTranslation';
+import { hasPermission } from '../../utils/rbac';
 import { cn } from '../../utils/format';
 import { sound } from '../../utils/audio';
 
 export type NavItem = 
   | 'pos' 
+  | 'tables'
   | 'kitchen' 
   | 'orders' 
   | 'products' 
@@ -57,6 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
       label: t('nav.operations'),
       items: [
         { id: 'pos' as NavItem, label: t('nav.posTerminal'), icon: Coffee },
+        { id: 'tables' as NavItem, label: t('nav.tables') || 'Tables & Floor', icon: MapPin },
         { id: 'kitchen' as NavItem, label: t('nav.kitchenBar'), icon: ChefHat },
         { id: 'orders' as NavItem, label: t('nav.orders'), icon: ShoppingBag }
       ]
@@ -89,7 +93,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
         { id: 'settings' as NavItem, label: t('nav.settings'), icon: Settings }
       ]
     }
-  ];
+  ].map(group => ({
+    ...group,
+    items: group.items.filter(item => hasPermission(currentStaff.role, item.id))
+  })).filter(group => group.items.length > 0);
 
   return (
     <aside className="w-64 bg-[#FFFFFF] dark:bg-[#1C1C1E] border-r border-black/[0.06] dark:border-white/[0.08] flex flex-col h-full select-none transition-colors">

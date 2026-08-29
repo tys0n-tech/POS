@@ -14,6 +14,7 @@ export const LoginPage: React.FC = () => {
   );
   const [pin, setPin] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const selectedStaff = staffList.find((s) => s.id === selectedStaffId) || staffList[0];
@@ -134,7 +135,7 @@ export const LoginPage: React.FC = () => {
       {/* Center Apple-style Auth Interface */}
       <div className="w-full max-w-4xl mx-auto flex flex-col lg:flex-row items-center justify-center gap-10 lg:gap-16 my-auto">
         {/* Left Column: Staff Selection Cards */}
-        <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
+        <div className="flex flex-col items-center lg:items-start text-center lg:text-left w-full lg:w-[480px]">
           <span className="text-xs font-bold uppercase tracking-wider text-[#8B6F5A] dark:text-[#D4BBA5] mb-1">
             Choose Staff Profile
           </span>
@@ -142,48 +143,75 @@ export const LoginPage: React.FC = () => {
             Who is operating the register?
           </h2>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-3 w-full max-w-md">
-            {staffList.map((s) => {
-              const isSelected = selectedStaffId === s.id;
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => {
-                    sound.playClick();
-                    setSelectedStaffId(s.id);
-                    setPin('');
-                    setErrorMsg('');
-                  }}
-                  className={cn(
-                    'flex items-center gap-3 p-3.5 rounded-[18px] border text-left transition-all duration-200 active:scale-[0.98]',
-                    isSelected
-                      ? 'bg-white dark:bg-[#1C1C1E] border-[#8B6F5A] shadow-md ring-2 ring-[#8B6F5A]/40'
-                      : 'bg-white/60 dark:bg-[#1C1C1E]/60 border-black/5 dark:border-white/5 hover:bg-white dark:hover:bg-[#1C1C1E] opacity-75 hover:opacity-100'
-                  )}
-                >
-                  {s.avatar ? (
-                    <img
-                      src={s.avatar}
-                      alt={s.name}
-                      className="w-12 h-12 rounded-full object-cover shadow-xs shrink-0"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-[#8B6F5A]/15 text-[#8B6F5A] font-bold text-base flex items-center justify-center shrink-0">
-                      {s.name.charAt(0)}
+          <div className="w-full max-w-md mb-4">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search staff by name or role..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white dark:bg-[#1C1C1E] border border-black/10 dark:border-white/10 rounded-[14px] py-3 pl-11 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#8B6F5A]/50 transition-all text-[#1D1D1F] dark:text-[#F5F5F7] placeholder-[#6E6E73] dark:placeholder-[#98989D]"
+              />
+              <svg className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6E6E73] dark:text-[#98989D]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+
+          <div className="w-full max-w-md">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-3 max-h-[45vh] lg:max-h-[55vh] overflow-y-auto pr-2 pb-2" style={{ scrollbarWidth: 'thin' }}>
+              {staffList
+                .filter(s => 
+                  s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                  s.role.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map((s) => {
+                const isSelected = selectedStaffId === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => {
+                      sound.playClick();
+                      setSelectedStaffId(s.id);
+                      setPin('');
+                      setErrorMsg('');
+                    }}
+                    className={cn(
+                      'flex items-center gap-3 p-3.5 rounded-[18px] border text-left transition-all duration-200 active:scale-[0.98]',
+                      isSelected
+                        ? 'bg-white dark:bg-[#1C1C1E] border-[#8B6F5A] shadow-md ring-2 ring-[#8B6F5A]/40'
+                        : 'bg-white/60 dark:bg-[#1C1C1E]/60 border-black/5 dark:border-white/5 hover:bg-white dark:hover:bg-[#1C1C1E] opacity-75 hover:opacity-100'
+                    )}
+                  >
+                    {s.avatar ? (
+                      <img
+                        src={s.avatar}
+                        alt={s.name}
+                        className="w-12 h-12 rounded-full object-cover shadow-xs shrink-0"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-[#8B6F5A]/15 text-[#8B6F5A] font-bold text-base flex items-center justify-center shrink-0">
+                        {s.name.charAt(0)}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7] truncate leading-snug">
+                        {s.name}
+                      </p>
+                      <span className="inline-block text-[10px] font-semibold text-[#6E6E73] dark:text-[#98989D] uppercase tracking-wider">
+                        {s.role}
+                      </span>
                     </div>
-                  )}
-                  <div className="min-w-0">
-                    <p className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7] truncate leading-snug">
-                      {s.name}
-                    </p>
-                    <span className="inline-block text-[10px] font-semibold text-[#6E6E73] dark:text-[#98989D] uppercase tracking-wider">
-                      {s.role}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
+                  </button>
+                );
+              })}
+              {staffList.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.role.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                <div className="col-span-2 text-center py-8 text-sm text-[#6E6E73] dark:text-[#98989D]">
+                  No staff members found.
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

@@ -36,10 +36,35 @@ const loadStaff = (): Staff[] => {
 
 const staffList = loadStaff();
 
+const loadAuth = (staffs: Staff[]): { isAuthenticated: boolean; currentStaff: Staff } => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_AUTH);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      const found = staffs.find((s) => s.id === parsed.currentStaffId);
+      if (found) {
+        return {
+          isAuthenticated: Boolean(parsed.isAuthenticated),
+          currentStaff: found
+        };
+      }
+    }
+  } catch (e) {
+    console.error(e);
+  }
+  // Default to authenticated on first load with primary staff
+  return {
+    isAuthenticated: true,
+    currentStaff: staffs[0] || initialStaff[0]
+  };
+};
+
+const authState = loadAuth(staffList);
+
 export const useStaffStore = create<StaffState>((set, get) => ({
   staffList,
-  currentStaff: staffList[0] || initialStaff[0],
-  isAuthenticated: true,
+  currentStaff: authState.currentStaff,
+  isAuthenticated: authState.isAuthenticated,
   isPinModalOpen: false,
   pinTargetStaffId: undefined,
 
@@ -51,6 +76,7 @@ export const useStaffStore = create<StaffState>((set, get) => ({
       return { success: false, message: 'Staff member not found' };
     }
     if (staff.pin === pin) {
+      localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify({ isAuthenticated: true, currentStaffId: staff.id }));
       set({ currentStaff: staff, isAuthenticated: true, isPinModalOpen: false, pinTargetStaffId: undefined });
       return { success: true };
     }
@@ -64,6 +90,7 @@ export const useStaffStore = create<StaffState>((set, get) => ({
     if (targetStaffId) {
       const target = staffList.find((s) => s.id === targetStaffId);
       if (target && target.pin === pin) {
+        localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify({ isAuthenticated: true, currentStaffId: target.id }));
         set({ currentStaff: target, isAuthenticated: true, isPinModalOpen: false, pinTargetStaffId: undefined });
         return { success: true };
       }
@@ -72,6 +99,7 @@ export const useStaffStore = create<StaffState>((set, get) => ({
 
     const matched = staffList.find((s) => s.pin === pin && s.active);
     if (matched) {
+      localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify({ isAuthenticated: true, currentStaffId: matched.id }));
       set({ currentStaff: matched, isAuthenticated: true, isPinModalOpen: false });
       return { success: true };
     }
@@ -79,14 +107,19 @@ export const useStaffStore = create<StaffState>((set, get) => ({
   },
 
   logout: () => {
+    localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify({ isAuthenticated: false, currentStaffId: get().currentStaff.id }));
     set({ isAuthenticated: false, isPinModalOpen: false, pinTargetStaffId: undefined });
   },
 
   lockScreen: () => {
+    localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify({ isAuthenticated: false, currentStaffId: get().currentStaff.id }));
     set({ isAuthenticated: false, pinTargetStaffId: get().currentStaff.id });
   },
 
-  setCurrentStaff: (staff) => set({ currentStaff: staff, isAuthenticated: true }),
+  setCurrentStaff: (staff) => {
+    localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify({ isAuthenticated: true, currentStaffId: staff.id }));
+    set({ currentStaff: staff, isAuthenticated: true });
+  },
 
   addStaff: (newStaff) => {
     const staff: Staff = { ...newStaff, id: `staff-${Date.now()}` };

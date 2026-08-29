@@ -2,7 +2,11 @@ import { create } from 'zustand';
 import { Order, OrderItem, OrderStatus, Payment, PaymentMethod, PaymentStatus } from '../types';
 import { initialOrders } from '../data/initialData';
 import { sound } from '../utils/audio';
-import { syncOrderToSupabase } from '../utils/supabase';
+import { 
+  syncOrderToSupabase, 
+  updateOrderStatusInSupabase, 
+  subscribeToOrdersRealtime 
+} from '../utils/supabase';
 
 interface OrderState {
   orders: Order[];
@@ -10,6 +14,7 @@ interface OrderState {
   statusFilter: string; // 'ALL' | OrderStatus
   dateFilter: 'today' | 'yesterday' | 'week' | 'all';
   searchQuery: string;
+  isRealtimeConnected: boolean;
 
   setSelectedOrder: (order: Order | null) => void;
   setStatusFilter: (status: string) => void;
@@ -38,6 +43,7 @@ interface OrderState {
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   refundOrder: (orderId: string, reason: string) => { success: boolean; order?: Order };
   getOrderById: (orderId: string) => Order | undefined;
+  initializeRealtime: () => () => void;
 }
 
 const STORAGE_KEY = 'northline_pos_orders';
@@ -58,6 +64,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   statusFilter: 'ALL',
   dateFilter: 'all',
   searchQuery: '',
+  isRealtimeConnected: false,
 
   setSelectedOrder: (order) => set({ selectedOrder: order }),
   setStatusFilter: (statusFilter) => set({ statusFilter }),
@@ -107,13 +114,15 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   updateOrderStatus: (orderId, status) => {
     sound.playClick();
     const now = new Date().toISOString();
+    const completedAt = status === 'COMPLETED' ? now : undefined;
+
     const updated = get().orders.map((o) => {
       if (o.id === orderId) {
         return {
           ...o,
           status,
           updatedAt: now,
-          completedAt: status === 'COMPLETED' ? now : o.completedAt
+          completedAt: completedAt || o.completedAt
         };
       }
       return o;
@@ -126,6 +135,9 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       : get().selectedOrder;
 
     set({ orders: updated, selectedOrder: selected });
+
+    // Sync status change to Supabase
+    updateOrderStatusInSupabase(orderId, status, completedAt);
   },
 
   refundOrder: (orderId, reason) => {
@@ -146,10 +158,71 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     set({ orders: updated, selectedOrder: updatedOrder });
 
+    updateOrderStatusInSupabase(orderId, 'CANCELLED');
+
     return { success: true, order: updatedOrder };
   },
 
   getOrderById: (orderId) => {
     return get().orders.find((o) => o.id === orderId);
+  },
+
+  initializeRealtime: () => {
+    const unsubscribe = subscribeToOrdersRealtime((payload) => {
+      if (!payload) return;
+
+      const { eventType, new: newRecord, old: oldRecord } = payload;
+      const currentOrders = get().orders;
+
+      if (eventType === 'INSERT' && newRecord) {
+        // Check if order already exists locally
+        if (!currentOrders.some((o) => o.id === newRecord.id)) {
+          sound.playNotification();
+          const mappedOrder: Order = {
+            id: newRecord.id,
+            orderNumber: newRecord.orderNumber || `#${newRecord.id.slice(-4)}`,
+            items: [], // header received from realtime
+            subtotal: Number(newRecord.subtotal || 0),
+            discount: Number(newRecord.discount || 0),
+            tax: Number(newRecord.tax || 0),
+            total: Number(newRecord.total || 0),
+            status: newRecord.status || 'NEW',
+            paymentStatus: newRecord.paymentStatus || 'PAID',
+            paymentMethod: newRecord.paymentMethod || 'PROMPTPAY',
+            staffId: newRecord.staffId || 'staff-1',
+            staffName: 'Staff',
+            registerId: newRecord.registerId || 'REG-01',
+            shiftId: newRecord.shiftId || 'shift-today-01',
+            tableOrPager: newRecord.tableOrPager || undefined,
+            orderType: newRecord.orderType || 'DINE_IN',
+            notes: newRecord.notes || undefined,
+            createdAt: newRecord.createdAt || new Date().toISOString(),
+            updatedAt: newRecord.updatedAt || new Date().toISOString(),
+            completedAt: newRecord.completedAt || undefined
+          };
+          const updated = [mappedOrder, ...currentOrders];
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+          set({ orders: updated });
+        }
+      } else if (eventType === 'UPDATE' && newRecord) {
+        const updated = currentOrders.map((o) => {
+          if (o.id === newRecord.id) {
+            return {
+              ...o,
+              status: newRecord.status || o.status,
+              paymentStatus: newRecord.paymentStatus || o.paymentStatus,
+              updatedAt: newRecord.updatedAt || new Date().toISOString(),
+              completedAt: newRecord.completedAt || o.completedAt
+            };
+          }
+          return o;
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        set({ orders: updated });
+      }
+    });
+
+    set({ isRealtimeConnected: true });
+    return unsubscribe;
   }
 }));

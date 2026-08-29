@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import { useToastStore } from '../stores/useToastStore';
+import { useTranslation } from '../hooks/useTranslation';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { sound } from '../utils/audio';
@@ -9,17 +10,15 @@ import {
   Receipt, 
   Moon, 
   Sun, 
-  Volume2, 
   RotateCcw, 
   Save, 
-  Laptop,
-  Check,
-  Percent
+  Laptop
 } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
   const { settings, updateSettings, setTheme, toggleAudio, resetToDefaults } = useSettingsStore();
   const { showToast } = useToastStore();
+  const { t } = useTranslation();
 
   const [storeName, setStoreName] = useState(settings.storeName);
   const [branchName, setBranchName] = useState(settings.branchName);
@@ -46,7 +45,7 @@ export const SettingsPage: React.FC = () => {
     });
 
     sound.playSuccess();
-    showToast({ type: 'success', title: 'Settings Saved', message: 'All changes successfully applied' });
+    showToast({ type: 'success', title: t('settings.savedSuccess'), message: storeName });
   };
 
   const handleResetData = () => {
@@ -64,7 +63,7 @@ export const SettingsPage: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
-            Store & POS Settings
+            {t('settings.title')}
           </h2>
           <p className="text-xs text-[#6E6E73] dark:text-[#98989D]">
             Configure store profile, thermal receipt templates, tax rates and appearance
@@ -77,7 +76,7 @@ export const SettingsPage: React.FC = () => {
           leftIcon={<Save className="w-4 h-4" />}
           onClick={handleSave}
         >
-          Save Changes
+          {t('settings.saveChanges')}
         </Button>
       </div>
 
@@ -93,14 +92,14 @@ export const SettingsPage: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="Café Name"
+              label={t('settings.storeName')}
               value={storeName}
               onChange={(e) => setStoreName(e.target.value)}
               placeholder="Northline Café"
               required
             />
             <Input
-              label="Branch Name"
+              label={t('settings.branchName')}
               value={branchName}
               onChange={(e) => setBranchName(e.target.value)}
               placeholder="Siam Square Flagship"
@@ -108,7 +107,7 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <Input
-            label="Store Address"
+            label={t('settings.address')}
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="Address for receipts"
@@ -116,13 +115,13 @@ export const SettingsPage: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="Phone Number"
+              label={t('settings.phone')}
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="02-123-4567"
             />
             <Input
-              label="Tax Identification Number (Tax ID)"
+              label={t('settings.taxId')}
               value={taxId}
               onChange={(e) => setTaxId(e.target.value)}
               placeholder="0105565012345"
@@ -141,7 +140,7 @@ export const SettingsPage: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="VAT Percentage (%)"
+              label={t('settings.vatRate')}
               type="number"
               value={vatRate}
               onChange={(e) => setVatRate(e.target.value)}
@@ -162,14 +161,14 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <Input
-            label="Receipt Sub-Header Message"
+            label={t('settings.receiptHeader')}
             value={headerMsg}
             onChange={(e) => setHeaderMsg(e.target.value)}
             placeholder="Specialty Coffee & Artisanal Pastries"
           />
 
           <Input
-            label="Receipt Footer Message"
+            label={t('settings.receiptFooter')}
             value={footerMsg}
             onChange={(e) => setFooterMsg(e.target.value)}
             placeholder="Thank you for visiting Northline Café"
@@ -181,30 +180,30 @@ export const SettingsPage: React.FC = () => {
           <div className="flex items-center gap-2 pb-3 border-b border-black/[0.04] dark:border-white/[0.06]">
             <Moon className="w-4 h-4 text-[#8B6F5A]" />
             <h3 className="font-bold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
-              Appearance & Tactile Feedback
+              {t('topbar.theme')} & Audio
             </h3>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-[#6E6E73] dark:text-[#98989D] mb-2">
-                Color Theme
+                {t('topbar.theme')}
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {[
                   { id: 'light', label: 'Light', icon: Sun },
                   { id: 'dark', label: 'Dark', icon: Moon },
                   { id: 'system', label: 'Auto', icon: Laptop }
-                ].map((t) => {
-                  const Icon = t.icon;
-                  const isSel = settings.theme === t.id;
+                ].map((tItem) => {
+                  const Icon = tItem.icon;
+                  const isSel = settings.theme === tItem.id;
                   return (
                     <button
-                      key={t.id}
+                      key={tItem.id}
                       type="button"
                       onClick={() => {
                         sound.playClick();
-                        setTheme(t.id as 'light' | 'dark' | 'system');
+                        setTheme(tItem.id as 'light' | 'dark' | 'system');
                       }}
                       className={`flex items-center justify-center gap-2 py-2 px-3 rounded-[12px] text-xs font-semibold border transition-all ${
                         isSel
@@ -213,7 +212,7 @@ export const SettingsPage: React.FC = () => {
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5" />
-                      <span>{t.label}</span>
+                      <span>{tItem.label}</span>
                     </button>
                   );
                 })}
@@ -222,7 +221,7 @@ export const SettingsPage: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-[#6E6E73] dark:text-[#98989D] mb-2">
-                Audio Synthesizer
+                Audio
               </label>
               <div className="flex items-center justify-between p-2.5 rounded-[12px] bg-black/[0.03] dark:bg-white/[0.04]">
                 <span className="text-xs font-semibold">Sound Effects</span>

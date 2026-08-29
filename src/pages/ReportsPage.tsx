@@ -1,16 +1,12 @@
 import React, { useState } from 'react';
 import { useOrderStore } from '../stores/useOrderStore';
 import { useProductStore } from '../stores/useProductStore';
+import { useTranslation } from '../hooks/useTranslation';
 import { formatCurrency } from '../utils/format';
 import { Button } from '../components/ui/Button';
+import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { 
-  BarChart3, 
-  Download, 
-  TrendingUp, 
-  Calendar, 
-  PieChart as PieIcon,
-  CreditCard,
-  DollarSign
+  Download
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -29,22 +25,23 @@ export const ReportsPage: React.FC = () => {
   const { orders } = useOrderStore();
   const { products } = useProductStore();
   const { showToast } = useToastStore();
+  const { t } = useTranslation();
 
   const [timeRange, setTimeRange] = useState<'today' | '7d' | '30d'>('today');
 
   // Category distribution data
   const categoryData = [
-    { name: 'Coffee', value: 48, color: '#8B6F5A' },
-    { name: 'Matcha & Tea', value: 24, color: '#34C759' },
-    { name: 'Bakery', value: 18, color: '#FF9F0A' },
-    { name: 'Non-Coffee', value: 10, color: '#0071E3' }
+    { name: t('categories.coffee'), value: 48, color: '#8B6F5A' },
+    { name: t('categories.matcha') + ' & ' + t('categories.tea'), value: 24, color: '#34C759' },
+    { name: t('categories.bakery'), value: 18, color: '#FF9F0A' },
+    { name: t('categories.nonCoffee'), value: 10, color: '#0071E3' }
   ];
 
   // Payment method distribution
   const paymentData = [
-    { name: 'PromptPay QR', value: 55, color: '#0071E3' },
-    { name: 'Cash', value: 30, color: '#34C759' },
-    { name: 'Credit Card', value: 15, color: '#8B6F5A' }
+    { name: t('payment.promptpay'), value: 55, color: '#0071E3' },
+    { name: t('payment.cash'), value: 30, color: '#34C759' },
+    { name: t('payment.creditCard'), value: 15, color: '#8B6F5A' }
   ];
 
   const hourlySales = [
@@ -84,7 +81,7 @@ export const ReportsPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 shrink-0">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
-            Sales Analytics & Reports
+            {t('reports.title')}
           </h2>
           <p className="text-xs text-[#6E6E73] dark:text-[#98989D]">
             Financial performance, category share and payment breakdown
@@ -92,22 +89,17 @@ export const ReportsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex bg-black/[0.04] dark:bg-white/[0.06] p-1 rounded-[10px]">
-            {(['today', '7d', '30d'] as const).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setTimeRange(r)}
-                className={`px-3 py-1 rounded-[8px] text-xs font-semibold uppercase tracking-wider transition-all ${
-                  timeRange === r
-                    ? 'bg-white dark:bg-[#2C2C2E] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs'
-                    : 'text-[#6E6E73] dark:text-[#98989D]'
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl<'today' | '7d' | '30d'>
+            layoutId="reports-timerange-tabs"
+            value={timeRange}
+            onChange={setTimeRange}
+            size="sm"
+            options={[
+              { value: 'today', label: 'TODAY' },
+              { value: '7d', label: '7D' },
+              { value: '30d', label: '30D' }
+            ]}
+          />
 
           <Button
             variant="secondary"
@@ -125,7 +117,7 @@ export const ReportsPage: React.FC = () => {
         {/* Hourly Volume Bar Chart */}
         <div className="p-5 rounded-[20px] bg-[#FFFFFF] dark:bg-[#1C1C1E] border border-black/[0.06] dark:border-white/[0.08] shadow-sm">
           <h3 className="font-bold text-sm text-[#1D1D1F] dark:text-[#F5F5F7] mb-1">
-            Hourly Peak Trading Volume
+            {t('reports.hourlySales')}
           </h3>
           <p className="text-xs text-[#6E6E73] dark:text-[#98989D] mb-4">
             Distribution of sales revenue throughout the day
@@ -154,7 +146,7 @@ export const ReportsPage: React.FC = () => {
         {/* Category Share Donut Chart */}
         <div className="p-5 rounded-[20px] bg-[#FFFFFF] dark:bg-[#1C1C1E] border border-black/[0.06] dark:border-white/[0.08] shadow-sm">
           <h3 className="font-bold text-sm text-[#1D1D1F] dark:text-[#F5F5F7] mb-1">
-            Revenue by Category
+            {t('reports.salesByCategory')}
           </h3>
           <p className="text-xs text-[#6E6E73] dark:text-[#98989D] mb-4">
             Product mix ratio and beverage category performance

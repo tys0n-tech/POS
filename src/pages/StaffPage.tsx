@@ -4,6 +4,7 @@ import { useToastStore } from '../stores/useToastStore';
 import { Staff, StaffRole } from '../types';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
 import { Badge } from '../components/ui/Badge';
 import { formatPhone, cn } from '../utils/format';
@@ -275,21 +276,17 @@ export const StaffPage: React.FC = () => {
           />
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#6E6E73] dark:text-[#98989D] mb-1.5">
-                Staff Role
-              </label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value as StaffRole)}
-                className="w-full bg-[#FFFFFF] dark:bg-[#1C1C1E] text-sm rounded-[12px] border border-black/10 dark:border-white/10 px-3 py-2.5 text-[#1D1D1F] dark:text-[#F5F5F7]"
-              >
-                <option value="CASHIER">Cashier (POS & Orders)</option>
-                <option value="BARISTA">Barista (KDS & Bar)</option>
-                <option value="MANAGER">Manager (Full Operations)</option>
-                <option value="OWNER">Owner (Administrator)</option>
-              </select>
-            </div>
+            <Select<StaffRole>
+              label="Staff Role"
+              value={role}
+              onChange={setRole}
+              options={[
+                { value: 'CASHIER', label: 'Cashier', description: 'POS & Order checkout' },
+                { value: 'BARISTA', label: 'Barista', description: 'KDS Kitchen & Brewing' },
+                { value: 'MANAGER', label: 'Manager', description: 'Operations & Stock control' },
+                { value: 'OWNER', label: 'Owner', description: 'Full administrator access' }
+              ]}
+            />
 
             <Input
               label="4-Digit PIN Code *"

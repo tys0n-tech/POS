@@ -12,6 +12,8 @@ import {
   LayoutDashboard, 
   Boxes 
 } from 'lucide-react';
+import { useStaffStore } from '../../stores/useStaffStore';
+import { hasPermission } from '../../utils/rbac';
 import { cn } from '../../utils/format';
 
 interface AppLayoutProps {
@@ -25,6 +27,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onSelectTab,
   children
 }) => {
+  const { currentStaff } = useStaffStore();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // Global keyboard shortcuts: "/" or "Cmd/Ctrl + K" for search
@@ -47,6 +50,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
   const pageTitles: Record<NavItem, string> = {
     pos: 'Point of Sale',
+    tables: 'Table & Floor Plan',
     kitchen: 'Kitchen Display System',
     orders: 'Order Management',
     products: 'Product Catalog',
@@ -59,13 +63,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     settings: 'Store Settings'
   };
 
-  const mobileNavItems: { id: NavItem; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  const allMobileNavItems: { id: NavItem; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: 'pos', label: 'POS', icon: Coffee },
     { id: 'kitchen', label: 'KDS', icon: ChefHat },
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
     { id: 'inventory', label: 'Stock', icon: Boxes },
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard }
   ];
+
+  const mobileNavItems = allMobileNavItems.filter(item => hasPermission(currentStaff.role, item.id));
 
   return (
     <div className="flex h-full w-full bg-[#F5F5F7] dark:bg-[#000000] text-[#1D1D1F] dark:text-[#F5F5F7] overflow-hidden">

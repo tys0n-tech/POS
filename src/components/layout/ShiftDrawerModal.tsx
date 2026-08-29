@@ -6,14 +6,16 @@ import { Keypad } from '../ui/Keypad';
 import { useShiftStore } from '../../stores/useShiftStore';
 import { useStaffStore } from '../../stores/useStaffStore';
 import { useToastStore } from '../../stores/useToastStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import { formatCurrency, formatDateTime } from '../../utils/format';
-import { DollarSign, ArrowDownRight, ArrowUpRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { DollarSign, ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { sound } from '../../utils/audio';
 
 export const ShiftDrawerModal: React.FC = () => {
   const { currentShift, isShiftDrawerOpen, setShiftDrawerOpen, openShift, addCashEntry, closeShift } = useShiftStore();
   const { currentStaff } = useStaffStore();
   const { showToast } = useToastStore();
+  const { t } = useTranslation();
 
   const [mode, setMode] = useState<'OVERVIEW' | 'OPEN' | 'CASH_IN' | 'CASH_OUT' | 'CLOSE'>('OVERVIEW');
   const [amountInput, setAmountInput] = useState('');
@@ -76,8 +78,8 @@ export const ShiftDrawerModal: React.FC = () => {
     <Modal
       isOpen={isShiftDrawerOpen}
       onClose={handleClose}
-      title="Cash Register & Shift"
-      subtitle={currentShift ? `Active Shift: ${currentShift.registerName}` : 'No active shift'}
+      title={t('nav.registerShift')}
+      subtitle={currentShift ? `Active Shift: ${currentShift.registerName}` : t('topbar.closed')}
       maxWidth="md"
     >
       {mode === 'OVERVIEW' && (
@@ -88,7 +90,7 @@ export const ShiftDrawerModal: React.FC = () => {
               <div className="p-4 rounded-[16px] bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08] space-y-3">
                 <div className="flex justify-between items-center text-xs text-[#6E6E73] dark:text-[#98989D]">
                   <span>Started: {formatDateTime(currentShift.startTime)}</span>
-                  <span>Cashier: {currentShift.staffName}</span>
+                  <span>{t('receipt.cashier')}: {currentShift.staffName}</span>
                 </div>
 
                 <div className="pt-2 border-t border-black/[0.04] dark:border-white/[0.06]">
@@ -108,7 +110,7 @@ export const ShiftDrawerModal: React.FC = () => {
                     </p>
                   </div>
                   <div>
-                    <span className="text-[#6E6E73] dark:text-[#98989D]">Cash Sales:</span>
+                    <span className="text-[#6E6E73] dark:text-[#98989D]">{t('payment.cash')} Sales:</span>
                     <p className="font-semibold text-[#34C759]">
                       +{formatCurrency(currentShift.cashSales)}
                     </p>

@@ -210,3 +210,31 @@ export interface ToastMessage {
   message?: string;
   duration?: number;
 }
+
+export type TableZone = 'INDOOR' | 'OUTDOOR' | 'BAR' | 'VIP';
+export type TableStatus = 'AVAILABLE' | 'OCCUPIED' | 'RESERVED' | 'BILL_PRINTED';
+
+export interface Table {
+  id: string;
+  number: string; // e.g. "T01", "B01", "VIP-1"
+  name: string;   // e.g. "Table 1"
+  zone: TableZone;
+  capacity: number; // e.g. 2, 4, 6, 8 seats
+  status: TableStatus;
+  currentOrderId?: string;
+  currentOrderNumber?: string;
+  currentBillAmount?: number;
+  seatedAt?: string;
+  guestCount?: number;
+}
+
+export interface Coupon {
+  id: string;
+  code: string; // e.g. "NORTHLINE10"
+  description: string;
+  discountType: 'PERCENTAGE' | 'FIXED';
+  discountValue: number; // e.g. 10 for 10%, 50 for 50 THB
+  minSpend?: number;
+  validUntil?: string;
+  active: boolean;
+}

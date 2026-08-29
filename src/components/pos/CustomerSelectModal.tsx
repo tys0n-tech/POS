@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useCustomerStore } from '../../stores/useCustomerStore';
 import { useToastStore } from '../../stores/useToastStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Customer } from '../../types';
 import { formatPhone } from '../../utils/format';
 import { Search, UserPlus, Check, User } from 'lucide-react';
@@ -24,6 +25,7 @@ export const CustomerSelectModal: React.FC<CustomerSelectModalProps> = ({
 }) => {
   const { customers, addCustomer } = useCustomerStore();
   const { showToast } = useToastStore();
+  const { t } = useTranslation();
 
   const [query, setQuery] = useState('');
   const [isAddingNew, setIsAddingNew] = useState(false);
@@ -67,7 +69,7 @@ export const CustomerSelectModal: React.FC<CustomerSelectModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Customer & Loyalty"
+      title={t('nav.customers')}
       subtitle="Select or register customer to earn points"
       maxWidth="md"
     >
@@ -81,7 +83,7 @@ export const CustomerSelectModal: React.FC<CustomerSelectModalProps> = ({
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search by phone number or name..."
+                placeholder="Search phone or name..."
                 className="w-full bg-black/[0.04] dark:bg-white/[0.06] rounded-[12px] pl-10 pr-4 py-2.5 text-sm text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#6E6E73]/50 focus:outline-none focus:ring-2 focus:ring-[#8B6F5A]/20"
               />
             </div>
@@ -141,7 +143,7 @@ export const CustomerSelectModal: React.FC<CustomerSelectModalProps> = ({
                       {c.name}
                     </p>
                     <p className="text-[10px] text-[#6E6E73] dark:text-[#98989D]">
-                      {formatPhone(c.phone)} · {c.loyaltyPoints} points ({c.totalOrders} visits)
+                      {formatPhone(c.phone)} · {c.loyaltyPoints} {t('pos.points')} ({c.totalOrders} visits)
                     </p>
                   </div>
                   {isSelected && <Check className="w-4 h-4 text-[#8B6F5A]" />}

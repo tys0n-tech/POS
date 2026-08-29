@@ -4,6 +4,7 @@ import { Category, Product, OrderItemModifier } from '../types';
 import { useProductStore } from '../stores/useProductStore';
 import { useCartStore } from '../stores/useCartStore';
 import { useToastStore } from '../stores/useToastStore';
+import { useTranslation } from '../hooks/useTranslation';
 import { ProductCard } from '../components/pos/ProductCard';
 import { ProductCustomizerModal } from '../components/pos/ProductCustomizerModal';
 import { OrderPanel } from '../components/pos/OrderPanel';
@@ -47,20 +48,21 @@ export const POSPage: React.FC = () => {
 
   const { addItem, getItemCount, getTotal } = useCartStore();
   const { showToast } = useToastStore();
+  const { t } = useTranslation();
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [barcodeBuffer, setBarcodeBuffer] = useState('');
 
-  const categories: Category[] = [
-    'All',
-    'Coffee',
-    'Tea',
-    'Matcha',
-    'Non-Coffee',
-    'Bakery',
-    'Dessert',
-    'Seasonal'
+  const categories: { id: Category; key: string }[] = [
+    { id: 'All', key: 'categories.all' },
+    { id: 'Coffee', key: 'categories.coffee' },
+    { id: 'Tea', key: 'categories.tea' },
+    { id: 'Matcha', key: 'categories.matcha' },
+    { id: 'Non-Coffee', key: 'categories.nonCoffee' },
+    { id: 'Bakery', key: 'categories.bakery' },
+    { id: 'Dessert', key: 'categories.dessert' },
+    { id: 'Seasonal', key: 'categories.seasonal' }
   ];
 
   // Barcode scanner listener
@@ -149,15 +151,15 @@ export const POSPage: React.FC = () => {
           {/* Categories Segmented Control */}
           <div className="relative flex items-center gap-1 overflow-x-auto p-1 rounded-[14px] bg-black/[0.05] dark:bg-white/[0.08] no-scrollbar shrink-0 shadow-inner">
             {categories.map((cat) => {
-              const isSelected = selectedCategory === cat;
+              const isSelected = selectedCategory === cat.id;
               return (
                 <motion.button
-                  key={cat}
+                  key={cat.id}
                   type="button"
                   whileTap={{ scale: 0.95 }}
                   onClick={() => {
                     sound.playClick();
-                    setSelectedCategory(cat);
+                    setSelectedCategory(cat.id);
                   }}
                   className={cn(
                     'relative z-10 px-4 py-1.5 rounded-[10px] text-xs font-semibold whitespace-nowrap transition-colors duration-200 select-none',
@@ -178,7 +180,7 @@ export const POSPage: React.FC = () => {
                       }}
                     />
                   )}
-                  <span>{cat}</span>
+                  <span>{t(cat.key)}</span>
                 </motion.button>
               );
             })}
@@ -190,72 +192,65 @@ export const POSPage: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onClear={() => setSearchQuery('')}
-              placeholder="Search drinks & food..."
+              placeholder={t('pos.searchPlaceholder')}
             />
           </div>
         </div>
 
-        {/* Product Grid with Staggered Wave Entry Animation */}
+        {/* Product Grid */}
         <div className="flex-1 overflow-y-auto pr-1">
-          <AnimatePresence mode="wait">
-            {filteredProducts.length === 0 ? (
-              <motion.div
-                key="empty-state"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="h-64 flex flex-col items-center justify-center text-center space-y-2"
-              >
-                <Coffee className="w-8 h-8 text-[#6E6E73] opacity-40" />
-                <p className="text-sm font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
-                  No items found in {selectedCategory}
-                </p>
-                <p className="text-xs text-[#6E6E73] dark:text-[#98989D]">
-                  Try searching for something else or pick another category.
-                </p>
-              </motion.div>
-            ) : (
-              <motion.div
-                key={`${selectedCategory}-${searchQuery}`}
-                variants={gridContainerVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 pb-16 lg:pb-0"
-              >
-                {filteredProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    onClick={handleProductCardClick}
-                  />
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {filteredProducts.length === 0 ? (
+            <div className="h-64 flex flex-col items-center justify-center text-center space-y-2">
+              <Coffee className="w-8 h-8 text-[#6E6E73] opacity-40" />
+              <p className="text-sm font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
+                No items found
+              </p>
+              <p className="text-xs text-[#6E6E73] dark:text-[#98989D]">
+                {t('pos.searchPlaceholder')}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 pb-16 lg:pb-0">
+              {filteredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onClick={handleProductCardClick}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* RIGHT ZONE: Desktop Order Summary Ticket Panel (Fixed 360px width) */}
+      {/* RIGHT ZONE: Desktop Order Summary Ticket Panel */}
       <div className="hidden lg:flex w-[360px] xl:w-[380px] shrink-0 h-full">
         <OrderPanel onProceedToPayment={() => setIsPaymentModalOpen(true)} />
       </div>
 
       {/* Mobile Floating Cart Button */}
-      {itemCount > 0 && (
-        <div className="lg:hidden fixed bottom-20 right-4 z-40">
-          <button
-            type="button"
-            onClick={() => setIsMobileCartOpen(true)}
-            className="flex items-center gap-3 px-5 py-3.5 bg-[#1D1D1F] dark:bg-[#F5F5F7] text-white dark:text-[#1D1D1F] rounded-full shadow-2xl active:scale-95 transition-all font-semibold text-sm"
+      <AnimatePresence>
+        {itemCount > 0 && (
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.8, opacity: 0, y: 20 }}
+            transition={{ type: 'spring', stiffness: 450, damping: 28 }}
+            className="lg:hidden fixed bottom-20 right-4 z-40"
           >
-            <ShoppingBag className="w-5 h-5" />
-            <span>{itemCount} items · {formatCurrency(getTotal(7, true))}</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      )}
+            <motion.button
+              whileTap={{ scale: 0.94 }}
+              type="button"
+              onClick={() => setIsMobileCartOpen(true)}
+              className="flex items-center gap-3 px-5 py-3.5 bg-[#1D1D1F] dark:bg-[#F5F5F7] text-white dark:text-[#1D1D1F] rounded-full shadow-2xl transition-all font-semibold text-sm"
+            >
+              <ShoppingBag className="w-5 h-5" />
+              <span>{itemCount} {t('pos.items')} · {formatCurrency(getTotal(7, true))}</span>
+              <ChevronRight className="w-4 h-4" />
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Mobile Cart Sheet */}
       {isMobileCartOpen && (
@@ -263,13 +258,13 @@ export const POSPage: React.FC = () => {
           <div className="bg-white dark:bg-[#1C1C1E] rounded-t-[28px] max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
             <div className="flex justify-between items-center px-6 pt-4 pb-2 border-b border-black/[0.06] dark:border-white/[0.08]">
               <span className="text-xs font-semibold uppercase tracking-wider text-[#8B6F5A]">
-                Current Order
+                {t('pos.currentOrder')}
               </span>
               <button
                 onClick={() => setIsMobileCartOpen(false)}
                 className="text-xs font-bold text-[#6E6E73] p-1"
               >
-                Close
+                Done
               </button>
             </div>
             <div className="flex-1 overflow-y-auto">

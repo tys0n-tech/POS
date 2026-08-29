@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, 
   Sun, 
@@ -144,32 +145,40 @@ export const TopBar: React.FC<TopBarProps> = ({ pageTitle, onOpenSearch, onNavig
             <Globe className="w-4 h-4" />
           </button>
 
-          {isLanguageMenuOpen && (
-            <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-[#1C1C1E] rounded-[14px] shadow-xl border border-black/10 dark:border-white/10 p-1.5 z-50 flex flex-col">
-              <button
-                type="button"
-                onClick={() => {
-                  sound.playClick();
-                  useSettingsStore.getState().setLanguage('th');
-                  setIsLanguageMenuOpen(false);
-                }}
-                className={`flex items-center gap-2 px-3 py-2 rounded-[10px] text-xs font-medium text-left transition-colors ${settings.language === 'th' ? 'bg-[#8B6F5A]/10 text-[#8B6F5A] dark:text-[#D4BBA5]' : 'text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
+          <AnimatePresence>
+            {isLanguageMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+                className="absolute right-0 mt-2 w-36 bg-[#FFFFFF]/95 dark:bg-[#2C2C2E]/95 backdrop-blur-xl rounded-[16px] shadow-2xl border border-black/10 dark:border-white/10 p-1.5 z-50 flex flex-col space-y-0.5"
               >
-                <span>ภาษาไทย (TH)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  sound.playClick();
-                  useSettingsStore.getState().setLanguage('en');
-                  setIsLanguageMenuOpen(false);
-                }}
-                className={`flex items-center gap-2 px-3 py-2 rounded-[10px] text-xs font-medium text-left transition-colors ${settings.language === 'en' ? 'bg-[#8B6F5A]/10 text-[#8B6F5A] dark:text-[#D4BBA5]' : 'text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
-              >
-                <span>English (EN)</span>
-              </button>
-            </div>
-          )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playClick();
+                    useSettingsStore.getState().setLanguage('th');
+                    setIsLanguageMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-[10px] text-xs font-medium text-left transition-all ${settings.language === 'th' ? 'bg-[#8B6F5A]/10 text-[#8B6F5A] dark:text-[#D4BBA5] font-semibold' : 'text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/[0.04] dark:hover:bg-white/[0.08]'}`}
+                >
+                  <span>🇹🇭 ภาษาไทย (TH)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playClick();
+                    useSettingsStore.getState().setLanguage('en');
+                    setIsLanguageMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-[10px] text-xs font-medium text-left transition-all ${settings.language === 'en' ? 'bg-[#8B6F5A]/10 text-[#8B6F5A] dark:text-[#D4BBA5] font-semibold' : 'text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/[0.04] dark:hover:bg-white/[0.08]'}`}
+                >
+                  <span>🇬🇧 English (EN)</span>
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Theme Switcher Menu */}
@@ -188,25 +197,33 @@ export const TopBar: React.FC<TopBarProps> = ({ pageTitle, onOpenSearch, onNavig
             {getThemeIcon()}
           </button>
           
-          {isThemeMenuOpen && (
-            <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-[#1C1C1E] rounded-[14px] shadow-xl border border-black/10 dark:border-white/10 p-1.5 z-50 flex flex-col">
-              {(['light', 'dark', 'system'] as const).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => {
-                    sound.playClick();
-                    setTheme(t);
-                    setIsThemeMenuOpen(false);
-                  }}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-xs font-medium text-left transition-colors capitalize ${settings.theme === t ? 'bg-[#8B6F5A]/10 text-[#8B6F5A] dark:text-[#D4BBA5]' : 'text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
-                >
-                  {getThemeIcon(t)}
-                  <span>{t}</span>
-                </button>
-              ))}
-            </div>
-          )}
+          <AnimatePresence>
+            {isThemeMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+                className="absolute right-0 mt-2 w-36 bg-[#FFFFFF]/95 dark:bg-[#2C2C2E]/95 backdrop-blur-xl rounded-[16px] shadow-2xl border border-black/10 dark:border-white/10 p-1.5 z-50 flex flex-col space-y-0.5"
+              >
+                {(['light', 'dark', 'system'] as const).map((tItem) => (
+                  <button
+                    key={tItem}
+                    type="button"
+                    onClick={() => {
+                      sound.playClick();
+                      setTheme(tItem);
+                      setIsThemeMenuOpen(false);
+                    }}
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-xs font-medium text-left transition-all capitalize ${settings.theme === tItem ? 'bg-[#8B6F5A]/10 text-[#8B6F5A] dark:text-[#D4BBA5] font-semibold' : 'text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/[0.04] dark:hover:bg-white/[0.08]'}`}
+                  >
+                    {getThemeIcon(tItem)}
+                    <span>{tItem}</span>
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Staff Switcher & Profile Dropdown Menu */}
@@ -239,63 +256,71 @@ export const TopBar: React.FC<TopBarProps> = ({ pageTitle, onOpenSearch, onNavig
           </button>
 
           {/* Profile Popover Menu */}
-          {isProfileMenuOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#1C1C1E] rounded-[18px] shadow-2xl border border-black/10 dark:border-white/10 p-2 z-50 flex flex-col gap-1">
-              {/* Header Info */}
-              <div className="px-3 py-2 border-b border-black/[0.04] dark:border-white/[0.06]">
-                <p className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
-                  {currentStaff.name}
-                </p>
-                <p className="text-[10px] text-[#6E6E73] dark:text-[#98989D] uppercase tracking-wider">
-                  {t('topbar.role')}: {currentStaff.role}
-                </p>
-              </div>
-
-              {/* Menu items */}
-              <button
-                type="button"
-                onClick={() => {
-                  sound.playClick();
-                  setIsProfileMenuOpen(false);
-                  setPinModalOpen(true);
-                }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-xs font-medium text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-left transition-colors"
+          <AnimatePresence>
+            {isProfileMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+                className="absolute right-0 mt-2 w-56 bg-[#FFFFFF]/95 dark:bg-[#2C2C2E]/95 backdrop-blur-xl rounded-[18px] shadow-2xl border border-black/10 dark:border-white/10 p-2 z-50 flex flex-col gap-1"
               >
-                <UserCheck className="w-3.5 h-3.5 text-[#8B6F5A]" />
-                <span>{t('topbar.switchStaff')}</span>
-              </button>
+                {/* Header Info */}
+                <div className="px-3 py-2 border-b border-black/[0.04] dark:border-white/[0.06]">
+                  <p className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
+                    {currentStaff.name}
+                  </p>
+                  <p className="text-[10px] text-[#6E6E73] dark:text-[#98989D] uppercase tracking-wider">
+                    {t('topbar.role')}: {currentStaff.role}
+                  </p>
+                </div>
 
-              {onNavigateTab && (
+                {/* Menu items */}
                 <button
                   type="button"
                   onClick={() => {
                     sound.playClick();
                     setIsProfileMenuOpen(false);
-                    onNavigateTab('staff');
+                    setPinModalOpen(true);
                   }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-xs font-medium text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-left transition-colors"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-xs font-medium text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-left transition-colors"
                 >
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#0071E3]" />
-                  <span>{t('topbar.manageStaff')}</span>
+                  <UserCheck className="w-3.5 h-3.5 text-[#8B6F5A]" />
+                  <span>{t('topbar.switchStaff')}</span>
                 </button>
-              )}
 
-              <div className="my-1 border-t border-black/[0.04] dark:border-white/[0.06]" />
+                {onNavigateTab && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sound.playClick();
+                      setIsProfileMenuOpen(false);
+                      onNavigateTab('staff');
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-xs font-medium text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-left transition-colors"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#0071E3]" />
+                    <span>{t('topbar.manageStaff')}</span>
+                  </button>
+                )}
 
-              <button
-                type="button"
-                onClick={() => {
-                  sound.playClick();
-                  setIsProfileMenuOpen(false);
-                  lockScreen();
-                }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-xs font-medium text-[#FF3B30] hover:bg-[#FF3B30]/10 text-left transition-colors"
-              >
-                <Lock className="w-3.5 h-3.5" />
-                <span>{t('topbar.lockScreen')}</span>
-              </button>
-            </div>
-          )}
+                <div className="my-1 border-t border-black/[0.04] dark:border-white/[0.06]" />
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playClick();
+                    setIsProfileMenuOpen(false);
+                    lockScreen();
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-xs font-medium text-[#FF3B30] hover:bg-[#FF3B30]/10 text-left transition-colors"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>{t('topbar.lockScreen')}</span>
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </header>

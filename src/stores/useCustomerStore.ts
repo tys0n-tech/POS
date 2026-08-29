@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Customer } from '../types';
 import { initialCustomers } from '../data/initialData';
+import { syncCustomerToSupabase } from '../utils/supabase';
 
 interface CustomerState {
   customers: Customer[];
@@ -44,6 +45,8 @@ export const useCustomerStore = create<CustomerState>((set, get) => ({
     const updated = [newCustomer, ...get().customers];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     set({ customers: updated, selectedCustomer: newCustomer });
+
+    syncCustomerToSupabase(newCustomer);
     return newCustomer;
   },
 
@@ -52,13 +55,17 @@ export const useCustomerStore = create<CustomerState>((set, get) => ({
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     const selectedCustomer = get().selectedCustomer?.id === id ? { ...get().selectedCustomer, ...updates } : get().selectedCustomer;
     set({ customers: updated, selectedCustomer: selectedCustomer as Customer });
+
+    const target = updated.find((c) => c.id === id);
+    if (target) syncCustomerToSupabase(target);
   },
 
   recordCustomerOrder: (customerId, orderTotal, mainProductName) => {
     const earnedPoints = Math.floor(orderTotal / 25);
+    let targetCustomer: Customer | undefined;
     const updated = get().customers.map((c) => {
       if (c.id === customerId) {
-        return {
+        const cUpdated = {
           ...c,
           loyaltyPoints: c.loyaltyPoints + earnedPoints,
           totalOrders: c.totalOrders + 1,
@@ -66,12 +73,16 @@ export const useCustomerStore = create<CustomerState>((set, get) => ({
           favoriteProduct: mainProductName || c.favoriteProduct,
           lastVisit: new Date().toISOString()
         };
+        targetCustomer = cUpdated;
+        return cUpdated;
       }
       return c;
     });
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     set({ customers: updated });
+
+    if (targetCustomer) syncCustomerToSupabase(targetCustomer);
   },
 
   findCustomerByPhone: (phone) => {

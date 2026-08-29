@@ -5,6 +5,7 @@ import { useToastStore } from '../stores/useToastStore';
 import { Product, Category, RecipeItem } from '../types';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
 import { SearchInput } from '../components/ui/SearchInput';
 import { formatCurrency, cn } from '../utils/format';
@@ -344,20 +345,17 @@ export const ProductsPage: React.FC = () => {
               placeholder="e.g. Dirty Coffee"
               required
             />
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#6E6E73] dark:text-[#98989D] mb-1.5">
-                Category
-              </label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as Category)}
-                className="w-full bg-[#FFFFFF] dark:bg-[#1C1C1E] text-sm rounded-[12px] border border-black/10 dark:border-white/10 px-3 py-2.5 text-[#1D1D1F] dark:text-[#F5F5F7]"
-              >
-                {categories.filter((c) => c !== 'All').map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
+            <Select<Category>
+              label="Category"
+              value={category}
+              onChange={setCategory}
+              options={categories
+                .filter((c) => c !== 'All')
+                .map((c) => ({
+                  value: c,
+                  label: c
+                }))}
+            />
           </div>
 
           <Input
@@ -437,26 +435,27 @@ export const ProductsPage: React.FC = () => {
 
           {/* Recipe Stock Auto-Deduction Linker */}
           <div className="space-y-2 pt-2 border-t border-black/[0.06] dark:border-white/[0.08]">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <label className="text-xs font-bold uppercase tracking-wider text-[#6E6E73] dark:text-[#98989D]">
-                Recipe / Auto Inventory Deduction
+                Recipe / Auto Stock Deduction
               </label>
-              <select
-                onChange={(e) => {
-                  if (e.target.value) {
-                    handleAddRecipeIngredient(e.target.value);
-                    e.target.value = '';
-                  }
-                }}
-                className="text-xs bg-black/[0.04] dark:bg-white/[0.08] px-2.5 py-1 rounded-[8px] border-none"
-              >
-                <option value="">+ Add Ingredient</option>
-                {ingredients.map((ing) => (
-                  <option key={ing.id} value={ing.id}>
-                    {ing.name} ({ing.unit})
-                  </option>
-                ))}
-              </select>
+              <div className="w-56">
+                <Select
+                  value=""
+                  onChange={(val) => {
+                    if (val) {
+                      handleAddRecipeIngredient(val);
+                    }
+                  }}
+                  placeholder="+ Add Ingredient"
+                  triggerClassName="py-1 px-2.5 text-xs rounded-[8px]"
+                  options={ingredients.map((ing) => ({
+                    value: ing.id,
+                    label: ing.name,
+                    description: `Unit: ${ing.unit} · Stock: ${ing.currentStock.toLocaleString()} ${ing.unit}`
+                  }))}
+                />
+              </div>
             </div>
 
             <div className="space-y-1.5 max-h-32 overflow-y-auto">

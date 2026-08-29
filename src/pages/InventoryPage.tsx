@@ -2,24 +2,22 @@ import React, { useState } from 'react';
 import { useInventoryStore } from '../stores/useInventoryStore';
 import { useStaffStore } from '../stores/useStaffStore';
 import { useToastStore } from '../stores/useToastStore';
-import { Ingredient, InventoryTransaction } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
+import { Ingredient } from '../types';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
 import { Badge } from '../components/ui/Badge';
 import { SearchInput } from '../components/ui/SearchInput';
+import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { formatCurrency, formatDateTime, cn } from '../utils/format';
 import { sound } from '../utils/audio';
 import { 
-  Boxes, 
   Plus, 
-  ArrowDownRight, 
-  ArrowUpRight, 
   AlertTriangle, 
   History, 
-  Scale, 
-  Layers,
-  Edit2
+  Scale
 } from 'lucide-react';
 
 export const InventoryPage: React.FC = () => {
@@ -27,12 +25,12 @@ export const InventoryPage: React.FC = () => {
     ingredients,
     transactions,
     addIngredient,
-    updateIngredient,
     addTransaction
   } = useInventoryStore();
 
   const { currentStaff } = useStaffStore();
   const { showToast } = useToastStore();
+  const { t } = useTranslation();
 
   const [activeTab, setActiveTab] = useState<'STOCK' | 'LOGS'>('STOCK');
   const [search, setSearch] = useState('');
@@ -63,7 +61,7 @@ export const InventoryPage: React.FC = () => {
     setSelectedIngredient(ing);
     setAdjustType('PURCHASE');
     setAdjustQty('1000');
-    setAdjustReason('Roastery Delivery / Stock In');
+    setAdjustReason('Stock In / Delivery');
     setIsAdjustModalOpen(true);
   };
 
@@ -116,10 +114,10 @@ export const InventoryPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 shrink-0">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
-            Inventory & Stock Control
+            {t('inventory.title')}
           </h2>
           <p className="text-xs text-[#6E6E73] dark:text-[#98989D]">
-            Live ingredient tracking, automated consumption from recipes & audit logs
+            {ingredients.length} items recorded
           </p>
         </div>
 
@@ -128,7 +126,7 @@ export const InventoryPage: React.FC = () => {
           {lowStockCount > 0 && (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#FF9F0A]/15 text-[#C97B00] dark:text-[#FF9F0A] text-xs font-semibold">
               <AlertTriangle className="w-3.5 h-3.5" />
-              <span>{lowStockCount} Low Stock Items</span>
+              <span>{lowStockCount} {t('inventory.lowStock')}</span>
             </div>
           )}
 
@@ -138,53 +136,38 @@ export const InventoryPage: React.FC = () => {
             leftIcon={<Plus className="w-4 h-4" />}
             onClick={() => setIsAddIngModalOpen(true)}
           >
-            Add Ingredient
+            {t('inventory.addSupply')}
           </Button>
         </div>
       </div>
 
       {/* Tabs & Search */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
-        <div className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] p-1 rounded-[12px]">
-          <button
-            type="button"
-            onClick={() => {
-              sound.playClick();
-              setActiveTab('STOCK');
-            }}
-            className={cn(
-              'px-3.5 py-1.5 rounded-[8px] text-xs font-semibold transition-all',
-              activeTab === 'STOCK'
-                ? 'bg-white dark:bg-[#2C2C2E] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs'
-                : 'text-[#6E6E73] dark:text-[#98989D]'
-            )}
-          >
-            Current Stock ({ingredients.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              sound.playClick();
-              setActiveTab('LOGS');
-            }}
-            className={cn(
-              'px-3.5 py-1.5 rounded-[8px] text-xs font-semibold transition-all flex items-center gap-1.5',
-              activeTab === 'LOGS'
-                ? 'bg-white dark:bg-[#2C2C2E] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs'
-                : 'text-[#6E6E73] dark:text-[#98989D]'
-            )}
-          >
-            <History className="w-3.5 h-3.5" />
-            <span>Audit Trail ({transactions.length})</span>
-          </button>
-        </div>
+        <SegmentedControl<'STOCK' | 'LOGS'>
+          layoutId="inventory-tabs"
+          value={activeTab}
+          onChange={setActiveTab}
+          options={[
+            {
+              value: 'STOCK',
+              label: t('inventory.currentStock'),
+              badge: ingredients.length
+            },
+            {
+              value: 'LOGS',
+              label: t('inventory.transactionsHistory'),
+              icon: History,
+              badge: transactions.length
+            }
+          ]}
+        />
 
         <div className="w-64">
           <SearchInput
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onClear={() => setSearch('')}
-            placeholder="Search ingredients..."
+            placeholder={t('inventory.searchPlaceholder')}
           />
         </div>
       </div>
@@ -197,11 +180,11 @@ export const InventoryPage: React.FC = () => {
               <thead className="sticky top-0 bg-black/[0.02] dark:bg-white/[0.03] border-b border-black/[0.06] dark:border-white/[0.08] text-[#6E6E73] dark:text-[#98989D] font-bold uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="py-3.5 px-5">Ingredient</th>
-                  <th className="py-3.5 px-4">Current Stock</th>
-                  <th className="py-3.5 px-4">Minimum Threshold</th>
-                  <th className="py-3.5 px-4">Unit Cost</th>
+                  <th className="py-3.5 px-4">{t('inventory.currentStock')}</th>
+                  <th className="py-3.5 px-4">{t('inventory.minStock')}</th>
+                  <th className="py-3.5 px-4">{t('inventory.unitCost')}</th>
                   <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4 text-right">Stock Action</th>
+                  <th className="py-3.5 px-4 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
@@ -227,11 +210,11 @@ export const InventoryPage: React.FC = () => {
                       <td className="py-3 px-4">
                         {isLow ? (
                           <Badge variant="warning" dot>
-                            Low Stock
+                            {t('inventory.lowStock')}
                           </Badge>
                         ) : (
                           <Badge variant="success" dot>
-                            Normal
+                            {t('inventory.inStock')}
                           </Badge>
                         )}
                       </td>
@@ -242,7 +225,7 @@ export const InventoryPage: React.FC = () => {
                           onClick={() => handleOpenAdjust(ing)}
                           leftIcon={<Scale className="w-3.5 h-3.5" />}
                         >
-                          Adjust / In
+                          {t('inventory.restock')}
                         </Button>
                       </td>
                     </tr>
@@ -257,12 +240,12 @@ export const InventoryPage: React.FC = () => {
             <table className="w-full text-left text-xs border-collapse">
               <thead className="sticky top-0 bg-black/[0.02] dark:bg-white/[0.03] border-b border-black/[0.06] dark:border-white/[0.08] text-[#6E6E73] dark:text-[#98989D] font-bold uppercase tracking-wider text-[10px]">
                 <tr>
-                  <th className="py-3.5 px-5">Timestamp</th>
+                  <th className="py-3.5 px-5">{t('receipt.date')}</th>
                   <th className="py-3.5 px-4">Ingredient</th>
-                  <th className="py-3.5 px-4">Action Type</th>
+                  <th className="py-3.5 px-4">Type</th>
                   <th className="py-3.5 px-4">Change</th>
                   <th className="py-3.5 px-4">Stock After</th>
-                  <th className="py-3.5 px-4">Reason / Order</th>
+                  <th className="py-3.5 px-4">Reason</th>
                   <th className="py-3.5 px-4">Staff</th>
                 </tr>
               </thead>
@@ -313,14 +296,14 @@ export const InventoryPage: React.FC = () => {
         <Modal
           isOpen={isAdjustModalOpen}
           onClose={() => setIsAdjustModalOpen(false)}
-          title={`Adjust Stock: ${selectedIngredient.name}`}
-          subtitle={`Current Level: ${selectedIngredient.currentStock} ${selectedIngredient.unit}`}
+          title={`${t('inventory.restock')}: ${selectedIngredient.name}`}
+          subtitle={`Current: ${selectedIngredient.currentStock} ${selectedIngredient.unit}`}
           maxWidth="md"
         >
           <form onSubmit={handleSaveAdjustment} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-[#6E6E73] dark:text-[#98989D] mb-1.5">
-                Adjustment Type
+                Type
               </label>
               <div className="grid grid-cols-4 gap-2">
                 {(['PURCHASE', 'USAGE', 'ADJUSTMENT', 'WASTE'] as const).map((type) => (
@@ -342,7 +325,7 @@ export const InventoryPage: React.FC = () => {
             </div>
 
             <Input
-              label={`Quantity to change (${selectedIngredient.unit}) *`}
+              label={`Quantity (${selectedIngredient.unit}) *`}
               type="number"
               value={adjustQty}
               onChange={(e) => setAdjustQty(e.target.value)}
@@ -351,10 +334,10 @@ export const InventoryPage: React.FC = () => {
             />
 
             <Input
-              label="Reason or Invoice Reference *"
+              label="Reason *"
               value={adjustReason}
               onChange={(e) => setAdjustReason(e.target.value)}
-              placeholder="e.g. Weekly roastery delivery / bar spill"
+              placeholder="e.g. Delivery / stock in"
               required
             />
 
@@ -368,7 +351,7 @@ export const InventoryPage: React.FC = () => {
                 Cancel
               </Button>
               <Button type="submit" variant="primary" className="flex-1">
-                Save Adjustment
+                Save
               </Button>
             </div>
           </form>
@@ -379,12 +362,12 @@ export const InventoryPage: React.FC = () => {
       <Modal
         isOpen={isAddIngModalOpen}
         onClose={() => setIsAddIngModalOpen(false)}
-        title="Add New Raw Ingredient"
+        title={t('inventory.addSupply')}
         maxWidth="md"
       >
         <form onSubmit={handleCreateIngredient} className="space-y-4">
           <Input
-            label="Ingredient Name *"
+            label="Name *"
             value={newIngName}
             onChange={(e) => setNewIngName(e.target.value)}
             placeholder="e.g. Colombia Geisha Beans"
@@ -393,40 +376,36 @@ export const InventoryPage: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <Input
-              label="Starting Stock Level *"
+              label="Initial Stock *"
               type="number"
               value={newIngStock}
               onChange={(e) => setNewIngStock(e.target.value)}
               required
             />
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#6E6E73] dark:text-[#98989D] mb-1.5">
-                Unit of Measure
-              </label>
-              <select
-                value={newIngUnit}
-                onChange={(e) => setNewIngUnit(e.target.value as Ingredient['unit'])}
-                className="w-full bg-[#FFFFFF] dark:bg-[#1C1C1E] text-sm rounded-[12px] border border-black/10 dark:border-white/10 px-3 py-2.5 text-[#1D1D1F] dark:text-[#F5F5F7]"
-              >
-                <option value="g">Grams (g)</option>
-                <option value="ml">Milliliters (ml)</option>
-                <option value="pcs">Pieces (pcs)</option>
-                <option value="kg">Kilograms (kg)</option>
-                <option value="L">Liters (L)</option>
-                <option value="shots">Shots</option>
-              </select>
-            </div>
+            <Select<Ingredient['unit']>
+              label="Unit of Measure"
+              value={newIngUnit}
+              onChange={setNewIngUnit}
+              options={[
+                { value: 'g', label: 'Grams (g)' },
+                { value: 'ml', label: 'Milliliters (ml)' },
+                { value: 'pcs', label: 'Pieces (pcs)' },
+                { value: 'kg', label: 'Kilograms (kg)' },
+                { value: 'L', label: 'Liters (L)' },
+                { value: 'shots', label: 'Shots' }
+              ]}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <Input
-              label="Minimum Stock Warning Alert"
+              label="Minimum Alert Level"
               type="number"
               value={newIngMin}
               onChange={(e) => setNewIngMin(e.target.value)}
             />
             <Input
-              label="Cost per Unit (THB)"
+              label="Cost per Unit"
               type="number"
               step="0.01"
               value={newIngCost}
@@ -444,7 +423,7 @@ export const InventoryPage: React.FC = () => {
               Cancel
             </Button>
             <Button type="submit" variant="primary" className="flex-1">
-              Add Ingredient
+              Add
             </Button>
           </div>
         </form>

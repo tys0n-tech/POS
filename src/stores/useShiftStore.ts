@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Shift, ShiftCashEntry } from '../types';
 import { initialShift } from '../data/initialData';
+import { syncShiftToSupabase } from '../utils/supabase';
 
 interface ShiftState {
   currentShift: Shift | null;
@@ -71,6 +72,9 @@ export const useShiftStore = create<ShiftState>((set, get) => ({
     };
     localStorage.setItem(STORAGE_KEY_CURRENT, JSON.stringify(newShift));
     set({ currentShift: newShift, isShiftDrawerOpen: false });
+
+    // Sync to Supabase
+    syncShiftToSupabase(newShift);
   },
 
   recordSale: (amount, isCash) => {
@@ -90,6 +94,8 @@ export const useShiftStore = create<ShiftState>((set, get) => ({
 
     localStorage.setItem(STORAGE_KEY_CURRENT, JSON.stringify(updated));
     set({ currentShift: updated });
+
+    syncShiftToSupabase(updated);
   },
 
   recordRefund: (amount, isCash) => {
@@ -107,6 +113,8 @@ export const useShiftStore = create<ShiftState>((set, get) => ({
 
     localStorage.setItem(STORAGE_KEY_CURRENT, JSON.stringify(updated));
     set({ currentShift: updated });
+
+    syncShiftToSupabase(updated);
   },
 
   addCashEntry: (type, amount, reason, staffName) => {
@@ -136,6 +144,8 @@ export const useShiftStore = create<ShiftState>((set, get) => ({
 
     localStorage.setItem(STORAGE_KEY_CURRENT, JSON.stringify(updated));
     set({ currentShift: updated });
+
+    syncShiftToSupabase(updated);
   },
 
   closeShift: (actualCash, note) => {
@@ -163,6 +173,8 @@ export const useShiftStore = create<ShiftState>((set, get) => ({
       shiftHistory: newHistory,
       isShiftDrawerOpen: false
     });
+
+    syncShiftToSupabase(closedShift);
 
     return { shift: closedShift, difference };
   }

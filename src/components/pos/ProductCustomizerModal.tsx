@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useProductStore } from '../../stores/useProductStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Button } from '../ui/Button';
 import { Product, ModifierGroup, OrderItemModifier } from '../../types';
 import { formatCurrency, cn } from '../../utils/format';
@@ -24,6 +25,7 @@ export const ProductCustomizerModal: React.FC<ProductCustomizerModalProps> = ({
   onAddToCart
 }) => {
   const { setCustomizingProduct } = useProductStore();
+  const { t } = useTranslation();
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string[]>>({});
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
@@ -179,7 +181,7 @@ export const ProductCustomizerModal: React.FC<ProductCustomizerModalProps> = ({
                   sound.playClick();
                   handleTriggerClose();
                 }}
-                className="w-8 h-8 rounded-full bg-black/[0.04] dark:bg-white/[0.08] hover:bg-black/[0.08] dark:hover:bg-white/[0.14] flex items-center justify-center text-[#6E6E73] dark:text-[#98989D] hover:text-[#1D1D1F] dark:hover:text-white transition-colors"
+                className="w-8 h-8 rounded-full bg-black/[0.04] dark:bg-white/[0.08] hover:bg-black/[0.08] dark:hover:bg-white/[0.14] flex items-center justify-center text-[#6E6E73] dark:text-[#98989D] hover:text-[#1D1D1F] dark:hover:white transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -202,7 +204,7 @@ export const ProductCustomizerModal: React.FC<ProductCustomizerModalProps> = ({
                     {product.name}
                   </h4>
                   <p className="text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] mt-0.5">
-                    Base: {formatCurrency(product.basePrice)}
+                    {t('customizer.basePrice')}: {formatCurrency(product.basePrice)}
                   </p>
                 </div>
               </div>
@@ -218,7 +220,7 @@ export const ProductCustomizerModal: React.FC<ProductCustomizerModalProps> = ({
                         {group.name}
                       </label>
                       {group.required && (
-                        <span className="text-[10px] text-[#8B6F5A] font-medium">Required</span>
+                        <span className="text-[10px] text-[#8B6F5A] font-medium">{t('customizer.required')}</span>
                       )}
                     </div>
 
@@ -260,12 +262,12 @@ export const ProductCustomizerModal: React.FC<ProductCustomizerModalProps> = ({
               {/* Special Instructions / Notes */}
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-[#6E6E73] dark:text-[#98989D]">
-                  Special Instructions
+                  {t('customizer.optional')} / Notes
                 </label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="e.g. Extra hot, separate lid, latte art..."
+                  placeholder={t('customizer.notesPlaceholder')}
                   rows={2}
                   className="w-full bg-black/[0.03] dark:bg-white/[0.06] text-sm rounded-[12px] border border-black/10 dark:border-white/10 p-3 text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#6E6E73]/50 focus:outline-none focus:border-[#8B6F5A] focus:ring-2 focus:ring-[#8B6F5A]/20 transition-all resize-none"
                 />
@@ -309,7 +311,7 @@ export const ProductCustomizerModal: React.FC<ProductCustomizerModalProps> = ({
                 className="px-8 shadow-md whitespace-nowrap"
                 onClick={handleSubmit}
               >
-                <span>Add to Order · {formatCurrency(totalPrice)}</span>
+                <span>{t('customizer.addToOrder')} · {formatCurrency(totalPrice)}</span>
               </Button>
             </div>
           </motion.div>

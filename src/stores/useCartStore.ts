@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Customer, OrderItem, OrderItemModifier, Product } from '../types';
+import { initialCoupons } from '../data/initialTables';
 import { sound } from '../utils/audio';
 
 interface CartState {
@@ -7,10 +8,13 @@ interface CartState {
   customer: Customer | null;
   orderType: 'DINE_IN' | 'TAKEAWAY';
   tableOrPager: string;
+  selectedTableId?: string;
   notes: string;
   discountAmount: number;
   discountType: 'NONE' | 'FIXED' | 'PERCENTAGE';
   discountValue: number; // e.g. 10 for 10% or 20 for ฿20
+  appliedCouponCode?: string;
+  appliedCouponDesc?: string;
   
   // Actions
   addItem: (product: Product, modifiers: OrderItemModifier[], quantity?: number, itemNotes?: string) => void;
@@ -20,8 +24,11 @@ interface CartState {
   setCustomer: (customer: Customer | null) => void;
   setOrderType: (type: 'DINE_IN' | 'TAKEAWAY') => void;
   setTableOrPager: (value: string) => void;
+  setTable: (tableId: string, tableName: string) => void;
   setNotes: (notes: string) => void;
   setDiscount: (type: 'NONE' | 'FIXED' | 'PERCENTAGE', value: number) => void;
+  applyCoupon: (code: string) => { success: boolean; message: string; discountDesc?: string };
+  removeCoupon: () => void;
   clearCart: () => void;
 
   // Computed values
@@ -37,10 +44,13 @@ export const useCartStore = create<CartState>((set, get) => ({
   customer: null,
   orderType: 'DINE_IN',
   tableOrPager: '',
+  selectedTableId: undefined,
   notes: '',
   discountAmount: 0,
   discountType: 'NONE',
   discountValue: 0,
+  appliedCouponCode: undefined,
+  appliedCouponDesc: undefined,
 
   addItem: (product, modifiers, quantity = 1, itemNotes = '') => {
     sound.playAddToCart();
@@ -104,10 +114,54 @@ export const useCartStore = create<CartState>((set, get) => ({
   setCustomer: (customer) => set({ customer }),
   setOrderType: (orderType) => set({ orderType }),
   setTableOrPager: (tableOrPager) => set({ tableOrPager }),
+  setTable: (tableId, tableName) => set({ selectedTableId: tableId, tableOrPager: tableName }),
   setNotes: (notes) => set({ notes }),
 
   setDiscount: (discountType, discountValue) => {
-    set({ discountType, discountValue });
+    set({ discountType, discountValue, appliedCouponCode: undefined, appliedCouponDesc: undefined });
+  },
+
+  applyCoupon: (rawCode) => {
+    const clean = rawCode.trim().toUpperCase();
+    if (!clean) {
+      return { success: false, message: 'Please enter a coupon code' };
+    }
+
+    const coupon = initialCoupons.find((c) => c.code.toUpperCase() === clean && c.active);
+    if (!coupon) {
+      return { success: false, message: 'Invalid or expired promo code' };
+    }
+
+    const subtotal = get().getSubtotal();
+    if (coupon.minSpend && subtotal < coupon.minSpend) {
+      return {
+        success: false,
+        message: `Minimum spend of ฿${coupon.minSpend} required for this code`
+      };
+    }
+
+    set({
+      discountType: coupon.discountType,
+      discountValue: coupon.discountValue,
+      appliedCouponCode: coupon.code,
+      appliedCouponDesc: coupon.description
+    });
+
+    sound.playSuccess();
+    return {
+      success: true,
+      message: `Coupon "${coupon.code}" applied!`,
+      discountDesc: coupon.description
+    };
+  },
+
+  removeCoupon: () => {
+    set({
+      discountType: 'NONE',
+      discountValue: 0,
+      appliedCouponCode: undefined,
+      appliedCouponDesc: undefined
+    });
   },
 
   clearCart: () => {
@@ -116,10 +170,13 @@ export const useCartStore = create<CartState>((set, get) => ({
       customer: null,
       orderType: 'DINE_IN',
       tableOrPager: '',
+      selectedTableId: undefined,
       notes: '',
       discountAmount: 0,
       discountType: 'NONE',
-      discountValue: 0
+      discountValue: 0,
+      appliedCouponCode: undefined,
+      appliedCouponDesc: undefined
     });
   },
 

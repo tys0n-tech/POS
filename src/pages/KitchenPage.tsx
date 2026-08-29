@@ -1,25 +1,22 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useOrderStore } from '../stores/useOrderStore';
+import { useTranslation } from '../hooks/useTranslation';
 import { Order, OrderStatus } from '../types';
-import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
-import { formatElapsedTime, formatTime, cn } from '../utils/format';
+import { formatElapsedTime, cn } from '../utils/format';
 import { sound } from '../utils/audio';
 import { 
-  ChefHat, 
   Clock, 
   Check, 
   Play, 
-  Bell, 
-  Coffee, 
-  ShoppingBag,
-  Sparkles,
-  Volume2
+  Bell
 } from 'lucide-react';
 
 export const KitchenPage: React.FC = () => {
   const { orders, updateOrderStatus } = useOrderStore();
-  const [timeTick, setTimeTick] = useState(0);
+  const { t } = useTranslation();
+  const [, setTimeTick] = useState(0);
 
   // Timer update tick every second to keep elapsed timers accurate
   useEffect(() => {
@@ -54,10 +51,16 @@ export const KitchenPage: React.FC = () => {
       Date.now() - new Date(order.createdAt).getTime() > 600000; // > 10 mins
 
     return (
-      <div
+      <motion.div
+        layout
         key={order.id}
+        initial={{ opacity: 0, y: 15, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
+        transition={{ type: 'spring', stiffness: 450, damping: 30 }}
+        whileHover={{ y: -2, transition: { duration: 0.15 } }}
         className={cn(
-          'p-4 rounded-[18px] bg-[#FFFFFF] dark:bg-[#1C1C1E] border transition-all duration-200 flex flex-col justify-between shadow-sm select-none',
+          'p-4 rounded-[18px] bg-[#FFFFFF] dark:bg-[#1C1C1E] border transition-all duration-200 flex flex-col justify-between shadow-sm hover:shadow-md select-none',
           isUrgent
             ? 'border-[#FF9F0A] ring-1 ring-[#FF9F0A]/30'
             : 'border-black/[0.06] dark:border-white/[0.08]'
@@ -71,7 +74,7 @@ export const KitchenPage: React.FC = () => {
                 {order.orderNumber}
               </span>
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.08] font-semibold text-[#6E6E73] dark:text-[#98989D]">
-                {order.orderType === 'DINE_IN' ? 'Dine-In' : 'Takeaway'}
+                {order.orderType === 'DINE_IN' ? t('pos.dineIn') : t('pos.takeaway')}
               </span>
             </div>
 
@@ -80,7 +83,7 @@ export const KitchenPage: React.FC = () => {
               className={cn(
                 'flex items-center gap-1 text-xs font-mono font-semibold px-2 py-0.5 rounded-full',
                 isUrgent
-                  ? 'bg-[#FF9F0A]/15 text-[#FF9F0A]'
+                  ? 'bg-[#FF9F0A]/15 text-[#FF9F0A] animate-pulse'
                   : 'bg-black/[0.04] dark:bg-white/[0.08] text-[#6E6E73] dark:text-[#98989D]'
               )}
             >
@@ -142,7 +145,7 @@ export const KitchenPage: React.FC = () => {
               leftIcon={<Play className="w-4 h-4" />}
               onClick={() => handleStartPreparing(order.id)}
             >
-              Start Preparing
+              {t('kitchen.startPrep')}
             </Button>
           )}
 
@@ -154,47 +157,48 @@ export const KitchenPage: React.FC = () => {
               leftIcon={<Bell className="w-4 h-4" />}
               onClick={() => handleMarkReady(order.id)}
             >
-              Mark Ready
+              {t('kitchen.markReady')}
             </Button>
           )}
 
           {columnStatus === 'READY' && (
             <Button
-              variant="secondary"
+              variant="primary"
               size="md"
-              className="w-full"
+              className="w-full bg-[#0071E3] hover:bg-[#0077ED] text-white"
               leftIcon={<Check className="w-4 h-4" />}
               onClick={() => handleCompleteOrder(order.id)}
             >
-              Serve & Complete
+              {t('kitchen.complete')}
             </Button>
           )}
         </div>
-      </div>
+      </motion.div>
     );
   };
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden p-4 sm:p-6 select-none">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-5 shrink-0">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
-            Kitchen Display System (KDS)
+            {t('kitchen.title')}
           </h2>
           <p className="text-xs text-[#6E6E73] dark:text-[#98989D]">
-            Live order queue for espresso bar and bakery station
+            {t('kitchen.liveTickets')} ({orders.filter(o => o.status !== 'COMPLETED' && o.status !== 'CANCELLED').length})
           </p>
         </div>
 
-        <button
+        <motion.button
+          whileTap={{ scale: 0.95 }}
           type="button"
           onClick={() => sound.playKitchenBell()}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-black/[0.04] hover:bg-black/[0.08] dark:bg-white/[0.06] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-black/[0.04] hover:bg-black/[0.08] dark:bg-white/[0.06] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] transition-all"
         >
           <Bell className="w-3.5 h-3.5 text-[#8B6F5A]" />
-          <span>Test Bar Bell</span>
-        </button>
+          <span>Bar Bell</span>
+        </motion.button>
       </div>
 
       {/* 3-Column Kanban Board */}
@@ -205,7 +209,7 @@ export const KitchenPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#0071E3]" />
               <h3 className="text-xs font-bold uppercase tracking-wider text-[#1D1D1F] dark:text-[#F5F5F7]">
-                New Orders
+                {t('status.new')}
               </h3>
             </div>
             <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#0071E3]/15 text-[#0071E3]">
@@ -214,13 +218,15 @@ export const KitchenPage: React.FC = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-            {newOrders.length === 0 ? (
-              <div className="h-40 flex items-center justify-center text-xs text-[#6E6E73] dark:text-[#98989D]">
-                No pending new orders
-              </div>
-            ) : (
-              newOrders.map((o) => renderOrderCard(o, 'NEW'))
-            )}
+            <AnimatePresence>
+              {newOrders.length === 0 ? (
+                <div className="h-40 flex items-center justify-center text-xs text-[#6E6E73] dark:text-[#98989D]">
+                  {t('kitchen.noOrders')}
+                </div>
+              ) : (
+                newOrders.map((o) => renderOrderCard(o, 'NEW'))
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
@@ -230,7 +236,7 @@ export const KitchenPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#FF9F0A]" />
               <h3 className="text-xs font-bold uppercase tracking-wider text-[#1D1D1F] dark:text-[#F5F5F7]">
-                Preparing
+                {t('status.preparing')}
               </h3>
             </div>
             <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#FF9F0A]/15 text-[#FF9F0A]">
@@ -239,13 +245,15 @@ export const KitchenPage: React.FC = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-            {preparingOrders.length === 0 ? (
-              <div className="h-40 flex items-center justify-center text-xs text-[#6E6E73] dark:text-[#98989D]">
-                No orders currently in prep
-              </div>
-            ) : (
-              preparingOrders.map((o) => renderOrderCard(o, 'PREPARING'))
-            )}
+            <AnimatePresence>
+              {preparingOrders.length === 0 ? (
+                <div className="h-40 flex items-center justify-center text-xs text-[#6E6E73] dark:text-[#98989D]">
+                  {t('kitchen.noOrders')}
+                </div>
+              ) : (
+                preparingOrders.map((o) => renderOrderCard(o, 'PREPARING'))
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
@@ -255,7 +263,7 @@ export const KitchenPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#34C759]" />
               <h3 className="text-xs font-bold uppercase tracking-wider text-[#1D1D1F] dark:text-[#F5F5F7]">
-                Ready for Pickup
+                {t('status.ready')}
               </h3>
             </div>
             <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#34C759]/15 text-[#34C759]">
@@ -264,13 +272,15 @@ export const KitchenPage: React.FC = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-            {readyOrders.length === 0 ? (
-              <div className="h-40 flex items-center justify-center text-xs text-[#6E6E73] dark:text-[#98989D]">
-                No orders ready for pickup
-              </div>
-            ) : (
-              readyOrders.map((o) => renderOrderCard(o, 'READY'))
-            )}
+            <AnimatePresence>
+              {readyOrders.length === 0 ? (
+                <div className="h-40 flex items-center justify-center text-xs text-[#6E6E73] dark:text-[#98989D]">
+                  {t('kitchen.noOrders')}
+                </div>
+              ) : (
+                readyOrders.map((o) => renderOrderCard(o, 'READY'))
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>

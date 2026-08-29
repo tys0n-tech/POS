@@ -194,6 +194,12 @@ class SoundEngine {
       // ignore
     }
   }
+
+  // Live order / notification chime
+  public playNotification() {
+    if (!this.enabled) return;
+    this.playKitchenBell();
+  }
 }
 
 export const sound = new SoundEngine();

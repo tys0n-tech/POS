@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '../../stores/useCartStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useStaffStore } from '../../stores/useStaffStore';
+import { useToastStore } from '../../stores/useToastStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import { CustomerSelectModal } from './CustomerSelectModal';
+import { TableSelectModal } from './TableSelectModal';
+import { SegmentedControl } from '../ui/SegmentedControl';
 import { formatCurrency, cn } from '../../utils/format';
 import { sound } from '../../utils/audio';
 import { 
@@ -12,12 +17,14 @@ import {
   Minus, 
   User, 
   Tag, 
-  ArrowRight,
-  Sparkles,
+  ArrowRight, 
   UtensilsCrossed,
   ShoppingBag as BagIcon,
   Receipt,
-  Coffee
+  Coffee,
+  MapPin,
+  Ticket,
+  X
 } from 'lucide-react';
 
 interface OrderPanelProps {
@@ -30,12 +37,16 @@ export const OrderPanel: React.FC<OrderPanelProps> = ({ onProceedToPayment }) =>
     customer,
     orderType,
     tableOrPager,
+    selectedTableId,
     discountType,
     discountValue,
+    appliedCouponCode,
+    appliedCouponDesc,
     setOrderType,
     setTableOrPager,
-    setCustomer,
     setDiscount,
+    applyCoupon,
+    removeCoupon,
     updateItemQuantity,
     removeItem,
     clearCart,
@@ -48,9 +59,13 @@ export const OrderPanel: React.FC<OrderPanelProps> = ({ onProceedToPayment }) =>
 
   const { settings } = useSettingsStore();
   const { currentStaff } = useStaffStore();
+  const { showToast } = useToastStore();
+  const { t } = useTranslation();
 
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [isTableModalOpen, setIsTableModalOpen] = useState(false);
   const [isDiscountMenuOpen, setIsDiscountMenuOpen] = useState(false);
+  const [couponInput, setCouponInput] = useState('');
 
   const subtotal = getSubtotal();
   const discount = getDiscount();
@@ -64,6 +79,27 @@ export const OrderPanel: React.FC<OrderPanelProps> = ({ onProceedToPayment }) =>
     setIsDiscountMenuOpen(false);
   };
 
+  const handleApplyCoupon = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!couponInput.trim()) return;
+
+    const res = applyCoupon(couponInput);
+    if (res.success) {
+      showToast({ type: 'success', title: 'Promo Code Applied', message: res.message });
+      setCouponInput('');
+      setIsDiscountMenuOpen(false);
+    } else {
+      sound.playError();
+      showToast({ type: 'error', title: 'Invalid Promo Code', message: res.message });
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    sound.playClick();
+    removeCoupon();
+    showToast({ type: 'info', title: 'Promo Code Removed', message: 'Discount cleared' });
+  };
+
   return (
     <div className="w-full h-full bg-white dark:bg-[#1C1C1E] border-l border-black/[0.06] dark:border-white/[0.08] flex flex-col justify-between select-none shadow-sm transition-colors">
       {/* Top Header */}
@@ -75,10 +111,10 @@ export const OrderPanel: React.FC<OrderPanelProps> = ({ onProceedToPayment }) =>
             </div>
             <div>
               <h3 className="font-bold text-sm text-[#1D1D1F] dark:text-[#F5F5F7] leading-none">
-                Current Order
+                {t('pos.currentOrder')}
               </h3>
               <span className="text-[10px] text-[#6E6E73] dark:text-[#98989D]">
-                Cashier: {currentStaff.name}
+                {t('receipt.cashier')}: {currentStaff.name}
               </span>
             </div>
           </div>
@@ -92,7 +128,7 @@ export const OrderPanel: React.FC<OrderPanelProps> = ({ onProceedToPayment }) =>
               }}
               className="text-[11px] font-semibold text-[#FF3B30] hover:bg-[#FF3B30]/10 px-2 py-1 rounded-[8px] transition-colors"
             >
-              Clear
+              {t('pos.clear')}
             </button>
           )}
         </div>
@@ -113,56 +149,56 @@ export const OrderPanel: React.FC<OrderPanelProps> = ({ onProceedToPayment }) =>
                 {customer ? customer.name : 'Walk-in'}
               </p>
               <span className="text-[9px] text-[#6E6E73] dark:text-[#98989D] block leading-none">
-                {customer ? `${customer.loyaltyPoints} pts` : 'No loyalty'}
+                {customer ? `${customer.loyaltyPoints} ${t('pos.points')}` : t('pos.selectCustomer')}
               </span>
             </div>
           </button>
 
           {/* Dine-In / Takeaway Toggle */}
-          <div className="p-0.5 rounded-[10px] bg-black/[0.04] dark:bg-white/[0.06] flex">
-            <button
-              type="button"
-              onClick={() => {
-                sound.playClick();
-                setOrderType('DINE_IN');
-              }}
-              className={cn(
-                'flex-1 py-1 rounded-[8px] text-[10px] font-bold transition-all flex items-center justify-center gap-1',
-                orderType === 'DINE_IN'
-                  ? 'bg-white dark:bg-[#2C2C2E] text-[#1D1D1F] dark:text-white shadow-xs'
-                  : 'text-[#6E6E73] dark:text-[#98989D]'
-              )}
-            >
-              <UtensilsCrossed className="w-2.5 h-2.5" />
-              <span>Dine-In</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                sound.playClick();
-                setOrderType('TAKEAWAY');
-              }}
-              className={cn(
-                'flex-1 py-1 rounded-[8px] text-[10px] font-bold transition-all flex items-center justify-center gap-1',
-                orderType === 'TAKEAWAY'
-                  ? 'bg-white dark:bg-[#2C2C2E] text-[#1D1D1F] dark:text-white shadow-xs'
-                  : 'text-[#6E6E73] dark:text-[#98989D]'
-              )}
-            >
-              <BagIcon className="w-2.5 h-2.5" />
-              <span>Takeaway</span>
-            </button>
-          </div>
+          <SegmentedControl<'DINE_IN' | 'TAKEAWAY'>
+            layoutId="order-panel-dining-type"
+            value={orderType}
+            onChange={setOrderType}
+            size="sm"
+            fullWidth
+            options={[
+              {
+                value: 'DINE_IN',
+                label: t('pos.dineIn'),
+                icon: UtensilsCrossed
+              },
+              {
+                value: 'TAKEAWAY',
+                label: t('pos.takeaway'),
+                icon: BagIcon
+              }
+            ]}
+          />
         </div>
 
-        {/* Table / Pager Input */}
-        <input
-          type="text"
-          value={tableOrPager}
-          onChange={(e) => setTableOrPager(e.target.value)}
-          placeholder="Table or Pager number (e.g. Table 4 / #08)..."
-          className="w-full bg-black/[0.02] dark:bg-white/[0.03] text-[11px] rounded-[8px] border border-black/5 dark:border-white/5 px-2.5 py-1 text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#6E6E73]/50 focus:outline-none focus:border-[#8B6F5A]/40"
-        />
+        {/* Table Selector / Pager Button */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsTableModalOpen(true)}
+            className={cn(
+              'flex-1 flex items-center justify-between px-2.5 py-1.5 rounded-[10px] border text-left transition-all text-xs font-semibold',
+              tableOrPager || selectedTableId
+                ? 'bg-[#8B6F5A]/10 border-[#8B6F5A]/40 text-[#8B6F5A] dark:text-[#D4BBA5]'
+                : 'bg-black/[0.02] dark:bg-white/[0.03] border-black/5 dark:border-white/5 text-[#6E6E73] hover:border-black/20'
+            )}
+          >
+            <div className="flex items-center gap-2 truncate">
+              <MapPin className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">
+                {tableOrPager ? tableOrPager : 'Select Table / Seating'}
+              </span>
+            </div>
+            <span className="text-[10px] uppercase font-bold opacity-75">
+              {tableOrPager ? 'Change' : 'Choose'}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Cart Items List */}
@@ -173,158 +209,213 @@ export const OrderPanel: React.FC<OrderPanelProps> = ({ onProceedToPayment }) =>
               <Coffee className="w-5 h-5 opacity-40" />
             </div>
             <p className="text-sm font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
-              Current Order is Empty
+              {t('pos.emptyCartTitle')}
             </p>
             <p className="text-xs text-[#6E6E73] dark:text-[#98989D] max-w-[200px]">
-              Tap items from the menu to build the customer&apos;s order ticket.
+              {t('pos.emptyCartSubtitle')}
             </p>
           </div>
         ) : (
-          items.map((item) => (
-            <div
-              key={item.id}
-              className="p-3 rounded-[14px] bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06] flex flex-col gap-2 transition-all"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <img
-                    src={item.image}
-                    alt={item.productName}
-                    className="w-10 h-10 rounded-[8px] object-cover shrink-0"
-                  />
-                  <div className="min-w-0">
-                    <h4 className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7] leading-tight truncate">
-                      {item.productName}
-                    </h4>
-                    <span className="text-[11px] font-medium text-[#6E6E73] dark:text-[#98989D]">
-                      {formatCurrency(item.unitPrice)} each
-                    </span>
+          <AnimatePresence initial={false}>
+            {items.map((item) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.1 } }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+                className="p-3 rounded-[14px] bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06] flex flex-col gap-2 transition-shadow hover:shadow-xs"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <img
+                      src={item.image}
+                      alt={item.productName}
+                      className="w-10 h-10 rounded-[8px] object-cover shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7] leading-tight truncate">
+                        {item.productName}
+                      </h4>
+                      <span className="text-[11px] font-medium text-[#6E6E73] dark:text-[#98989D]">
+                        {formatCurrency(item.unitPrice)}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <span className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7] shrink-0">
-                  {formatCurrency(item.unitPrice * item.quantity)}
-                </span>
-              </div>
-
-              {/* Modifiers chips */}
-              {item.modifiers && item.modifiers.length > 0 && (
-                <div className="flex flex-wrap gap-1 pl-12">
-                  {item.modifiers.map((m, mIdx) => (
-                    <span
-                      key={mIdx}
-                      className="text-[10px] px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.08] text-[#6E6E73] dark:text-[#98989D]"
-                    >
-                      {m.optionName}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Notes */}
-              {item.notes && (
-                <div className="text-[10px] italic text-[#8B6F5A] dark:text-[#D4BBA5] pl-12">
-                  Note: {item.notes}
-                </div>
-              )}
-
-              {/* Stepper & Remove */}
-              <div className="flex items-center justify-between pt-1 border-t border-black/[0.04] dark:border-white/[0.06] pl-12">
-                <div className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] p-0.5 rounded-[8px]">
-                  <button
-                    type="button"
-                    onClick={() => updateItemQuantity(item.id, -1)}
-                    className="w-6 h-6 rounded-[6px] bg-white dark:bg-[#2C2C2E] flex items-center justify-center text-xs text-[#1D1D1F] dark:text-[#F5F5F7] active:scale-95 shadow-xs"
-                  >
-                    <Minus className="w-3 h-3" />
-                  </button>
-                  <span className="w-6 text-center text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
-                    {item.quantity}
+                  <span className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7] shrink-0">
+                    {formatCurrency(item.unitPrice * item.quantity)}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => updateItemQuantity(item.id, 1)}
-                    className="w-6 h-6 rounded-[6px] bg-white dark:bg-[#2C2C2E] flex items-center justify-center text-xs text-[#1D1D1F] dark:text-[#F5F5F7] active:scale-95 shadow-xs"
-                  >
-                    <Plus className="w-3 h-3" />
-                  </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => removeItem(item.id)}
-                  className="text-[#6E6E73] hover:text-[#FF3B30] text-xs p-1"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          ))
+                {/* Modifiers chips */}
+                {item.modifiers && item.modifiers.length > 0 && (
+                  <div className="flex flex-wrap gap-1 pl-12">
+                    {item.modifiers.map((m, mIdx) => (
+                      <span
+                        key={mIdx}
+                        className="text-[10px] px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.08] text-[#6E6E73] dark:text-[#98989D]"
+                      >
+                        {m.optionName}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Notes */}
+                {item.notes && (
+                  <div className="text-[10px] italic text-[#8B6F5A] dark:text-[#D4BBA5] pl-12">
+                    Note: {item.notes}
+                  </div>
+                )}
+
+                {/* Stepper & Remove */}
+                <div className="flex items-center justify-between pt-1 border-t border-black/[0.04] dark:border-white/[0.06] pl-12">
+                  <div className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] p-0.5 rounded-[8px]">
+                    <motion.button
+                      whileTap={{ scale: 0.85 }}
+                      type="button"
+                      onClick={() => updateItemQuantity(item.id, -1)}
+                      className="w-6 h-6 rounded-[6px] bg-white dark:bg-[#2C2C2E] flex items-center justify-center text-xs text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
+                    >
+                      <Minus className="w-3 h-3" />
+                    </motion.button>
+                    <span className="w-6 text-center text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
+                      {item.quantity}
+                    </span>
+                    <motion.button
+                      whileTap={{ scale: 0.85 }}
+                      type="button"
+                      onClick={() => updateItemQuantity(item.id, 1)}
+                      className="w-6 h-6 rounded-[6px] bg-white dark:bg-[#2C2C2E] flex items-center justify-center text-xs text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </motion.button>
+                  </div>
+
+                  <motion.button
+                    whileTap={{ scale: 0.85 }}
+                    type="button"
+                    onClick={() => removeItem(item.id)}
+                    className="text-[#6E6E73] hover:text-[#FF3B30] text-xs p-1 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </motion.button>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         )}
       </div>
 
       {/* Order Summary & Calculations */}
       <div className="p-4 bg-black/[0.02] dark:bg-white/[0.02] border-t border-black/[0.06] dark:border-white/[0.08] space-y-3">
-        {/* Discount Button / Selector */}
+        {/* Discount / Coupon Button / Selector */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setIsDiscountMenuOpen(!isDiscountMenuOpen)}
             className="w-full flex items-center justify-between px-3 py-2 rounded-[10px] bg-black/[0.03] hover:bg-black/[0.06] dark:bg-white/[0.06] dark:hover:bg-white/[0.1] text-xs font-medium text-[#6E6E73] dark:text-[#98989D] transition-all"
           >
-            <div className="flex items-center gap-2">
-              <Tag className="w-3.5 h-3.5 text-[#8B6F5A] dark:text-[#D4BBA5]" />
-              <span>
-                {discountType === 'NONE'
-                  ? 'Add Discount / Promotion'
+            <div className="flex items-center gap-2 truncate mr-2">
+              <Tag className="w-3.5 h-3.5 text-[#8B6F5A] dark:text-[#D4BBA5] shrink-0" />
+              <span className="truncate">
+                {appliedCouponCode
+                  ? `Promo: ${appliedCouponCode}`
+                  : discountType === 'NONE'
+                  ? t('pos.addDiscount')
                   : discountType === 'PERCENTAGE'
-                  ? `Discount (${discountValue}%)`
-                  : `Discount (${formatCurrency(discountValue)})`}
+                  ? `${t('pos.discount')} (${discountValue}%)`
+                  : `${t('pos.discount')} (${formatCurrency(discountValue)})`}
               </span>
             </div>
-            <span className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
+            <span className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] shrink-0">
               {discount > 0 ? `-${formatCurrency(discount)}` : 'Edit'}
             </span>
           </button>
 
-          {/* Discount Preset Popover */}
-          {isDiscountMenuOpen && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 p-2 bg-white dark:bg-[#2C2C2E] rounded-[14px] shadow-xl border border-black/10 dark:border-white/10 grid grid-cols-2 gap-1.5 z-20">
-              <button
-                type="button"
-                onClick={() => handleSelectDiscount('NONE', 0)}
-                className="p-2 text-xs font-medium text-left rounded-[8px] hover:bg-black/[0.05] dark:hover:bg-white/[0.08]"
+          {/* Discount & Promo Code Popover */}
+          <AnimatePresence>
+            {isDiscountMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+                className="absolute bottom-full left-0 right-0 mb-2 p-3 bg-[#FFFFFF]/95 dark:bg-[#2C2C2E]/95 backdrop-blur-xl rounded-[18px] shadow-2xl border border-black/10 dark:border-white/10 space-y-2.5 z-20"
               >
-                No Discount
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectDiscount('PERCENTAGE', 10)}
-                className="p-2 text-xs font-medium text-left rounded-[8px] hover:bg-black/[0.05] dark:hover:bg-white/[0.08]"
-              >
-                10% Staff Discount
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectDiscount('PERCENTAGE', 15)}
-                className="p-2 text-xs font-medium text-left rounded-[8px] hover:bg-black/[0.05] dark:hover:bg-white/[0.08]"
-              >
-                15% VIP Promo
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectDiscount('FIXED', 50)}
-                className="p-2 text-xs font-medium text-left rounded-[8px] hover:bg-black/[0.05] dark:hover:bg-white/[0.08]"
-              >
-                ฿50 Voucher
-              </button>
-            </div>
-          )}
+                {/* Promo Code Input Form */}
+                <form onSubmit={handleApplyCoupon} className="flex gap-1.5">
+                  <div className="relative flex-1">
+                    <Ticket className="w-3.5 h-3.5 text-[#8B6F5A] absolute left-2.5 top-2.5" />
+                    <input
+                      type="text"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                      placeholder="Enter promo code (e.g. VIP20)"
+                      className="w-full bg-black/[0.04] dark:bg-white/[0.06] rounded-[10px] pl-8 pr-2 py-1.5 text-xs text-[#1D1D1F] dark:text-[#F5F5F7] uppercase placeholder:normal-case focus:outline-none focus:ring-1 focus:ring-[#8B6F5A]"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="px-3 py-1.5 bg-[#8B6F5A] text-white rounded-[10px] text-xs font-bold hover:bg-[#7A5F4B] transition-colors"
+                  >
+                    Apply
+                  </button>
+                </form>
+
+                {appliedCouponCode && (
+                  <div className="flex items-center justify-between p-2 rounded-[10px] bg-[#34C759]/10 text-[#34C759] text-xs font-medium">
+                    <span>{appliedCouponDesc || appliedCouponCode}</span>
+                    <button
+                      type="button"
+                      onClick={handleRemoveCoupon}
+                      className="text-[#FF3B30] hover:bg-[#FF3B30]/10 p-1 rounded-full"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Preset Discounts Grid */}
+                <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-black/[0.04] dark:border-white/[0.06]">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectDiscount('NONE', 0)}
+                    className="p-2 text-xs font-medium text-left rounded-[10px] hover:bg-black/[0.05] dark:hover:bg-white/[0.08] transition-colors"
+                  >
+                    No Discount
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectDiscount('PERCENTAGE', 10)}
+                    className="p-2 text-xs font-medium text-left rounded-[10px] hover:bg-black/[0.05] dark:hover:bg-white/[0.08] transition-colors"
+                  >
+                    10% Staff / Member
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectDiscount('PERCENTAGE', 15)}
+                    className="p-2 text-xs font-medium text-left rounded-[10px] hover:bg-black/[0.05] dark:hover:bg-white/[0.08] transition-colors"
+                  >
+                    15% VIP Promo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectDiscount('FIXED', 50)}
+                    className="p-2 text-xs font-medium text-left rounded-[10px] hover:bg-black/[0.05] dark:hover:bg-white/[0.08] transition-colors"
+                  >
+                    ฿50 Voucher
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Lines */}
         <div className="space-y-1 text-xs">
           <div className="flex justify-between text-[#6E6E73] dark:text-[#98989D]">
-            <span>Subtotal ({itemCount} items)</span>
+            <span>{t('pos.subtotal')} ({itemCount} {t('pos.items')})</span>
             <span className="font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">
               {formatCurrency(subtotal)}
             </span>
@@ -332,46 +423,41 @@ export const OrderPanel: React.FC<OrderPanelProps> = ({ onProceedToPayment }) =>
 
           {discount > 0 && (
             <div className="flex justify-between text-[#34C759]">
-              <span>Discount</span>
-              <span className="font-medium">-{formatCurrency(discount)}</span>
+              <span>{t('pos.discount')}</span>
+              <span className="font-semibold">-{formatCurrency(discount)}</span>
             </div>
           )}
 
-          {tax > 0 && (
-            <div className="flex justify-between text-[11px] text-[#6E6E73] dark:text-[#98989D]">
-              <span>VAT ({settings.vatRate}% {settings.vatIncluded ? 'Incl.' : 'Excl.'})</span>
-              <span>{formatCurrency(tax)}</span>
-            </div>
-          )}
-        </div>
+          <div className="flex justify-between text-[#6E6E73] dark:text-[#98989D]">
+            <span>{t('pos.vat')} ({settings.vatRate}%)</span>
+            <span>{formatCurrency(tax)}</span>
+          </div>
 
-        {/* Total Box */}
-        <div className="pt-2.5 border-t border-black/[0.06] dark:border-white/[0.08] flex items-baseline justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-[#6E6E73] dark:text-[#98989D] block leading-tight">
-              Total
+          <div className="flex justify-between items-baseline pt-2 border-t border-black/[0.06] dark:border-white/[0.08] text-sm">
+            <span className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
+              {t('pos.total')}
             </span>
-            <span className="text-[10px] text-[#6E6E73]/70 dark:text-[#98989D]/70">
-              {itemCount} {itemCount === 1 ? 'item' : 'items'}
+            <span className="text-xl font-extrabold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+              {formatCurrency(total)}
             </span>
           </div>
-          <span className="text-2xl font-bold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
-            {formatCurrency(total)}
-          </span>
         </div>
 
-        {/* Primary CTA */}
+        {/* Charge Checkout Button */}
         <button
           type="button"
+          disabled={items.length === 0}
           onClick={() => {
             sound.playClick();
             onProceedToPayment();
           }}
-          disabled={items.length === 0}
-          className="w-full h-12 bg-[#1D1D1F] text-white hover:bg-[#2C2C2E] active:bg-[#000000] dark:bg-[#F5F5F7] dark:text-[#1D1D1F] dark:hover:bg-[#FFFFFF] rounded-[14px] font-bold text-sm transition-all duration-150 active:scale-[0.99] disabled:opacity-40 disabled:pointer-events-none flex items-center justify-between px-5 shadow-sm"
+          className="w-full py-3.5 px-4 rounded-[14px] bg-[#8B6F5A] hover:bg-[#7A5F4B] active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none text-white font-bold text-sm shadow-md transition-all flex items-center justify-between"
         >
-          <span>Continue to Payment</span>
-          <ArrowRight className="w-4 h-4" />
+          <span>{t('pos.charge')}</span>
+          <div className="flex items-center gap-2">
+            <span>{formatCurrency(total)}</span>
+            <ArrowRight className="w-4 h-4" />
+          </div>
         </button>
       </div>
 
@@ -380,7 +466,15 @@ export const OrderPanel: React.FC<OrderPanelProps> = ({ onProceedToPayment }) =>
         isOpen={isCustomerModalOpen}
         onClose={() => setIsCustomerModalOpen(false)}
         selectedCustomer={customer}
-        onSelect={setCustomer}
+        onSelect={(c) => {
+          useCartStore.getState().setCustomer(c);
+        }}
+      />
+
+      {/* Table Select Modal */}
+      <TableSelectModal
+        isOpen={isTableModalOpen}
+        onClose={() => setIsTableModalOpen(false)}
       />
     </div>
   );

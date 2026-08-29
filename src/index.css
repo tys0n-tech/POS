@@ -223,24 +223,24 @@ h3, h4 {
   body * {
     visibility: hidden;
   }
+  #thermal-receipt-printable, #thermal-receipt-printable *,
   #printable-receipt, #printable-receipt * {
     visibility: visible;
   }
-  #printable-receipt {
+  #thermal-receipt-printable, #printable-receipt {
     position: absolute;
     left: 0;
     top: 0;
-    width: 80mm;
+    width: 100%;
     margin: 0 auto;
-    padding: 12px;
+    padding: 8px;
     background: #ffffff !important;
     color: #000000 !important;
     font-family: 'SF Mono', 'Courier New', Courier, monospace;
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.35;
   }
   @page {
-    size: 80mm auto;
     margin: 0;
   }
 }
