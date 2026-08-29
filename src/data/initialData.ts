@@ -650,7 +650,18 @@ export const initialStoreSettings: StoreSettings = {
   printerPaperWidth: '80mm',
   enableAudio: true,
   theme: 'light',
-  language: 'en'
+  language: 'en',
+  
+  // Hardware defaults
+  edcTerminalType: 'IP_LAN',
+  edcTerminalIp: '192.168.1.150',
+  edcTerminalPort: 8080,
+  edcMerchantId: 'MERCHANT-NORTHLINE-01',
+  scaleType: 'SIMULATOR',
+  scaleBaudRate: 9600,
+  scaleUnit: 'g',
+  networkPrinterIp: '192.168.1.200',
+  networkPrinterPort: 9100
 };
 
 export const initialInventoryTransactions: InventoryTransaction[] = [

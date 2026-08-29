@@ -201,6 +201,17 @@ export interface StoreSettings {
   enableAudio: boolean;
   theme: 'light' | 'dark' | 'system';
   language: 'en' | 'th';
+  
+  // Hardware Peripherals & Bridges
+  edcTerminalType: 'DISABLED' | 'IP_LAN' | 'BLUETOOTH' | 'USB_SERIAL';
+  edcTerminalIp: string;
+  edcTerminalPort: number;
+  edcMerchantId: string;
+  scaleType: 'DISABLED' | 'WEB_SERIAL' | 'BLUETOOTH_BLE' | 'SIMULATOR';
+  scaleBaudRate: number;
+  scaleUnit: 'g' | 'kg' | 'oz';
+  networkPrinterIp: string;
+  networkPrinterPort: number;
 }
 
 export interface ToastMessage {

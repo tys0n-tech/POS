@@ -4,7 +4,9 @@ import { useToastStore } from '../stores/useToastStore';
 import { useTranslation } from '../hooks/useTranslation';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
 import { sound } from '../utils/audio';
+import { testEDCConnection, readDigitalScale, tareDigitalScale } from '../utils/hardware';
 import { 
   Store, 
   Receipt, 
@@ -12,7 +14,13 @@ import {
   Sun, 
   RotateCcw, 
   Save, 
-  Laptop
+  Laptop,
+  CreditCard,
+  Scale,
+  Printer,
+  Wifi,
+  CheckCircle2,
+  RefreshCw
 } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
@@ -30,6 +38,23 @@ export const SettingsPage: React.FC = () => {
   const [headerMsg, setHeaderMsg] = useState(settings.receiptHeaderMessage);
   const [footerMsg, setFooterMsg] = useState(settings.receiptFooterMessage);
 
+  // Hardware State
+  const [edcTerminalType, setEdcTerminalType] = useState(settings.edcTerminalType || 'IP_LAN');
+  const [edcTerminalIp, setEdcTerminalIp] = useState(settings.edcTerminalIp || '192.168.1.150');
+  const [edcTerminalPort, setEdcTerminalPort] = useState((settings.edcTerminalPort || 8080).toString());
+  const [edcMerchantId, setEdcMerchantId] = useState(settings.edcMerchantId || 'MERCHANT-NORTHLINE-01');
+
+  const [scaleType, setScaleType] = useState(settings.scaleType || 'SIMULATOR');
+  const [scaleBaudRate, setScaleBaudRate] = useState((settings.scaleBaudRate || 9600).toString());
+  const [scaleUnit, setScaleUnit] = useState(settings.scaleUnit || 'g');
+  const [liveScaleWeight, setLiveScaleWeight] = useState<number | null>(null);
+
+  const [networkPrinterIp, setNetworkPrinterIp] = useState(settings.networkPrinterIp || '192.168.1.200');
+  const [networkPrinterPort, setNetworkPrinterPort] = useState((settings.networkPrinterPort || 9100).toString());
+
+  const [isTestingEDC, setIsTestingEDC] = useState(false);
+  const [isReadingScale, setIsReadingScale] = useState(false);
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     updateSettings({
@@ -41,11 +66,68 @@ export const SettingsPage: React.FC = () => {
       vatRate: parseFloat(vatRate) || 0,
       vatIncluded,
       receiptHeaderMessage: headerMsg,
-      receiptFooterMessage: footerMsg
+      receiptFooterMessage: footerMsg,
+      edcTerminalType,
+      edcTerminalIp,
+      edcTerminalPort: parseInt(edcTerminalPort, 10) || 8080,
+      edcMerchantId,
+      scaleType,
+      scaleBaudRate: parseInt(scaleBaudRate, 10) || 9600,
+      scaleUnit,
+      networkPrinterIp,
+      networkPrinterPort: parseInt(networkPrinterPort, 10) || 9100
     });
 
     sound.playSuccess();
     showToast({ type: 'success', title: t('settings.savedSuccess'), message: storeName });
+  };
+
+  const handleTestEDC = async () => {
+    setIsTestingEDC(true);
+    sound.playClick();
+    const res = await testEDCConnection({
+      ...settings,
+      edcTerminalType,
+      edcTerminalIp,
+      edcTerminalPort: parseInt(edcTerminalPort, 10) || 8080
+    });
+    setIsTestingEDC(false);
+    if (res.success) {
+      sound.playSuccess();
+      showToast({ type: 'success', title: 'EDC Connected', message: res.message });
+    } else {
+      sound.playError();
+      showToast({ type: 'error', title: 'EDC Connection Failed', message: res.message });
+    }
+  };
+
+  const handleTestScale = async () => {
+    setIsReadingScale(true);
+    sound.playClick();
+    const res = await readDigitalScale({
+      ...settings,
+      scaleType,
+      scaleUnit
+    });
+    setIsReadingScale(false);
+    if (res.success) {
+      sound.playSuccess();
+      setLiveScaleWeight(res.weight);
+      showToast({ type: 'success', title: 'Scale Reading', message: `${res.weight} ${res.unit} (Stable)` });
+    } else {
+      sound.playError();
+      showToast({ type: 'error', title: 'Scale Error', message: res.errorMessage || 'Could not read from scale' });
+    }
+  };
+
+  const handleTareScale = async () => {
+    sound.playClick();
+    const res = await tareDigitalScale({
+      ...settings,
+      scaleUnit
+    });
+    setLiveScaleWeight(0.0);
+    showToast({ type: 'info', title: 'Scale Tared', message: res.message });
   };
 
   const handleResetData = () => {
@@ -66,7 +148,7 @@ export const SettingsPage: React.FC = () => {
             {t('settings.title')}
           </h2>
           <p className="text-xs text-[#6E6E73] dark:text-[#98989D]">
-            Configure store profile, thermal receipt templates, tax rates and appearance
+            Configure store profile, hardware peripherals, tax rates, and thermal receipts
           </p>
         </div>
 
@@ -129,7 +211,161 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Section 2: Taxes & Receipts */}
+        {/* Section 2: Hardware Peripherals & Device Bridges */}
+        <div className="p-6 rounded-[20px] bg-[#FFFFFF] dark:bg-[#1C1C1E] border border-black/[0.06] dark:border-white/[0.08] shadow-sm space-y-6">
+          <div className="flex items-center gap-2 pb-3 border-b border-black/[0.04] dark:border-white/[0.06]">
+            <Wifi className="w-4 h-4 text-[#0071E3]" />
+            <h3 className="font-bold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
+              Hardware & Peripheral Devices (EDC, Scales & Network Printers)
+            </h3>
+          </div>
+
+          {/* Sub 1: Smart EDC Card Reader Terminal */}
+          <div className="p-4 rounded-[16px] bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-[#8B6F5A]" />
+                <h4 className="font-bold text-xs text-[#1D1D1F] dark:text-[#F5F5F7]">
+                  Smart EDC Card Terminal (KBank, SCB, PAX, Sunmi)
+                </h4>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                isLoading={isTestingEDC}
+                onClick={handleTestEDC}
+                className="text-xs"
+              >
+                Test Ping EDC
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Select<'DISABLED' | 'IP_LAN' | 'BLUETOOTH' | 'USB_SERIAL'>
+                label="Connection Protocol"
+                value={edcTerminalType}
+                onChange={setEdcTerminalType}
+                options={[
+                  { value: 'IP_LAN', label: 'LAN IP / WiFi' },
+                  { value: 'BLUETOOTH', label: 'Web Bluetooth (BLE)' },
+                  { value: 'USB_SERIAL', label: 'USB Serial (COM)' },
+                  { value: 'DISABLED', label: 'Disabled (Manual)' }
+                ]}
+              />
+              <Input
+                label="Terminal IP Address"
+                value={edcTerminalIp}
+                onChange={(e) => setEdcTerminalIp(e.target.value)}
+                placeholder="192.168.1.150"
+                disabled={edcTerminalType !== 'IP_LAN'}
+              />
+              <Input
+                label="Port / Baud"
+                value={edcTerminalPort}
+                onChange={(e) => setEdcTerminalPort(e.target.value)}
+                placeholder="8080"
+                disabled={edcTerminalType !== 'IP_LAN'}
+              />
+            </div>
+          </div>
+
+          {/* Sub 2: Digital Weight Scale */}
+          <div className="p-4 rounded-[16px] bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Scale className="w-4 h-4 text-[#34C759]" />
+                <h4 className="font-bold text-xs text-[#1D1D1F] dark:text-[#F5F5F7]">
+                  Digital Weight Scale (Coffee Dose / Retail Scale)
+                </h4>
+              </div>
+              <div className="flex items-center gap-2">
+                {liveScaleWeight !== null && (
+                  <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-full bg-[#34C759]/15 text-[#34C759]">
+                    {liveScaleWeight} {scaleUnit}
+                  </span>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleTareScale}
+                  className="text-xs"
+                >
+                  Tare (Zero)
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  isLoading={isReadingScale}
+                  onClick={handleTestScale}
+                  className="text-xs"
+                >
+                  Read Weight
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Select<'DISABLED' | 'SIMULATOR' | 'WEB_SERIAL' | 'BLUETOOTH_BLE'>
+                label="Scale Protocol"
+                value={scaleType}
+                onChange={setScaleType}
+                options={[
+                  { value: 'SIMULATOR', label: 'Virtual Simulator (Demo)' },
+                  { value: 'BLUETOOTH_BLE', label: 'Bluetooth BLE (Acaia/Felicita)' },
+                  { value: 'WEB_SERIAL', label: 'Web Serial (USB RS-232)' },
+                  { value: 'DISABLED', label: 'Disabled' }
+                ]}
+              />
+              <Input
+                label="Baud Rate"
+                value={scaleBaudRate}
+                onChange={(e) => setScaleBaudRate(e.target.value)}
+                placeholder="9600"
+                disabled={scaleType !== 'WEB_SERIAL'}
+              />
+              <Select<'g' | 'kg' | 'oz'>
+                label="Weight Unit"
+                value={scaleUnit}
+                onChange={setScaleUnit}
+                options={[
+                  { value: 'g', label: 'Grams (g)' },
+                  { value: 'kg', label: 'Kilograms (kg)' },
+                  { value: 'oz', label: 'Ounces (oz)' }
+                ]}
+              />
+            </div>
+          </div>
+
+          {/* Sub 3: ESC/POS Network Receipt Printer */}
+          <div className="p-4 rounded-[16px] bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/5 space-y-3">
+            <div className="flex items-center gap-2">
+              <Printer className="w-4 h-4 text-[#0071E3]" />
+              <h4 className="font-bold text-xs text-[#1D1D1F] dark:text-[#F5F5F7]">
+                Network ESC/POS Printer (RAW TCP Port 9100)
+              </h4>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label="Printer IP Address"
+                value={networkPrinterIp}
+                onChange={(e) => setNetworkPrinterIp(e.target.value)}
+                placeholder="192.168.1.200"
+              />
+              <Input
+                label="RAW TCP Port"
+                value={networkPrinterPort}
+                onChange={(e) => setNetworkPrinterPort(e.target.value)}
+                placeholder="9100"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Taxes & Receipts */}
         <div className="p-6 rounded-[20px] bg-[#FFFFFF] dark:bg-[#1C1C1E] border border-black/[0.06] dark:border-white/[0.08] shadow-sm space-y-4">
           <div className="flex items-center gap-2 pb-3 border-b border-black/[0.04] dark:border-white/[0.06]">
             <Receipt className="w-4 h-4 text-[#0071E3]" />
@@ -175,7 +411,7 @@ export const SettingsPage: React.FC = () => {
           />
         </div>
 
-        {/* Section 3: System Appearance & Audio */}
+        {/* Section 4: System Appearance & Audio */}
         <div className="p-6 rounded-[20px] bg-[#FFFFFF] dark:bg-[#1C1C1E] border border-black/[0.06] dark:border-white/[0.08] shadow-sm space-y-4">
           <div className="flex items-center gap-2 pb-3 border-b border-black/[0.04] dark:border-white/[0.06]">
             <Moon className="w-4 h-4 text-[#8B6F5A]" />
@@ -241,7 +477,7 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Section 4: Data Management */}
+        {/* Section 5: Data Management */}
         <div className="p-6 rounded-[20px] bg-[#FFFFFF] dark:bg-[#1C1C1E] border border-black/[0.06] dark:border-white/[0.08] shadow-sm flex items-center justify-between">
           <div>
             <h4 className="font-bold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">

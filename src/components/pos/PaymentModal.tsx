@@ -16,6 +16,7 @@ import { useToastStore } from '../../stores/useToastStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { formatCurrency } from '../../utils/format';
 import { sound } from '../../utils/audio';
+import { chargeEDCTerminal } from '../../utils/hardware';
 import { SplitBillModal } from './SplitBillModal';
 import { useTableStore } from '../../stores/useTableStore';
 import { 
@@ -93,7 +94,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const changeAmount = Math.max(0, receivedAmount - total);
   const isCashSufficient = paymentMethod !== 'CASH' || receivedAmount >= total;
 
-  const handleCompletePayment = () => {
+  const handleCompletePayment = async () => {
     if (!isCashSufficient) {
       sound.playError();
       showToast({ 
@@ -106,6 +107,24 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
     setIsProcessing(true);
     sound.playClick();
+
+    let transactionRef = `TXN-${Date.now().toString().slice(-6)}`;
+    
+    // Process through EDC Hardware Terminal if Credit Card selected
+    if (paymentMethod === 'CREDIT_CARD') {
+      const edcRes = await chargeEDCTerminal(total, settings);
+      if (!edcRes.success) {
+        setIsProcessing(false);
+        sound.playError();
+        showToast({
+          type: 'error',
+          title: 'EDC Terminal Error',
+          message: edcRes.errorMessage || 'Card payment declined'
+        });
+        return;
+      }
+      transactionRef = edcRes.transactionRef || transactionRef;
+    }
 
     setTimeout(() => {
       // 1. Create the Order in Store & Supabase
@@ -125,6 +144,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           receivedAmount: paymentMethod === 'CASH' ? receivedAmount : total,
           changeAmount: paymentMethod === 'CASH' ? changeAmount : 0,
           status: 'PAID',
+          transactionRef,
           createdAt: new Date().toISOString()
         },
         customer,
